@@ -1,0 +1,9 @@
+{
+  "short_name": "byCycle",
+  "name": "byCycle - Get there by cycle!",
+  "description": "A trip planner that provides bicycle directions",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

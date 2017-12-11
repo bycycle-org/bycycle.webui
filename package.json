@@ -1,0 +1,44 @@
+{
+  "name": "bycycle.webui",
+  "version": "1.0.0a1",
+  "private": true,
+  "dependencies": {
+    "autoprefixer": "^7.2.5",
+    "axios": "^0.17.1",
+    "core-js": "^2.5.3",
+    "lodash": "^4.17.4",
+    "material-design-icons": "^3.0.1",
+    "node-sass-chokidar": "0.0.3",
+    "npm-run-all": "^4.1.2",
+    "ol": "^4.6.4",
+    "postcss-cli": "^4.1.1",
+    "prop-types": "^15.6.0",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "react-redux": "^5.0.6",
+    "react-scripts": "^1.1.0",
+    "redux": "^3.7.2",
+    "redux-thunk": "^2.2.0"
+  },
+  "scripts": {
+    "start": "npm-run-all -p css:start js:start",
+    "build": "npm-run-all css:build:production js:build:production",
+    "test": "react-scripts test --env=jsdom",
+    "css:start": "npm-run-all css:build css:watch",
+    "css:build": "npm run css:compile",
+    "css:build:production": "npm-run-all css:compile:production css:autoprefix",
+    "css:autoprefix": "postcss 'src/**/*.css' --replace --use autoprefixer",
+    "css:compile": "node-sass-chokidar --source-map true src/ -o src/",
+    "css:compile:production": "node-sass-chokidar src/ -o src/",
+    "css:watch": "node-sass-chokidar src/ -o src/ --watch --recursive",
+    "js:start": "react-scripts start",
+    "js:build": "react-scripts build",
+    "js:build:production": "react-scripts build"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "firefox esr",
+    "not ie < 9"
+  ]
+}

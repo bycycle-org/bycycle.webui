@@ -1,0 +1,8 @@
+/build
+/coverage
+/node_modules
+/src/**/*.css
+/.env*
+/package-lock.json
+
+npm-debug.log*

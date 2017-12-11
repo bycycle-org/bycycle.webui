@@ -1,0 +1,45 @@
+@import "./styles/mixins.scss";
+@import "./styles/variables.scss";
+
+.Menu {
+    @include hidden-xs();
+
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+
+    > button {
+        @include floating-element();
+
+        position: absolute;
+        top: $standard-spacing;
+        right: $standard-spacing;
+        z-index: 2;
+    }
+
+    > ul.menu {
+        @include menu();
+
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        overflow: auto;
+        z-index: 1;
+        width: $menu-width;
+
+        > li.title {
+            @include title();
+
+            &:hover {
+                background-color: white;
+            }
+        }
+
+        @media (max-width: $sm-width - 1px) {
+            width: $menu-width-sm;
+        }
+    }
+}

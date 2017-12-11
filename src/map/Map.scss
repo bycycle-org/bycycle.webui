@@ -1,0 +1,112 @@
+@import "../styles/mixins.scss";
+@import "../styles/variables.scss";
+
+.Map {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+
+    background-color: lighten(lightseagreen, 50%);
+}
+
+.Map > .controls {
+    position: absolute;
+    z-index: 1;
+
+    button {
+        @include floating-element();
+    }
+
+    &.row {
+        display: flex;
+        flex-direction: row;
+        margin: 0;
+        > * {
+            margin-right: $half-standard-spacing;
+        }
+        > *:last-child {
+            margin-right: 0;
+        }
+    }
+
+    &.column {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        > * {
+            margin-bottom: $half-standard-spacing;
+        }
+        > *:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: $xs-width - 1px) {
+            bottom: $quarter-standard-spacing;
+            > * {
+                margin-bottom: $quarter-standard-spacing;
+            }
+        }
+    }
+
+    &.bottom-right {
+        bottom: $standard-spacing;
+        right: $standard-spacing;
+
+        @media (max-width: $xs-width - 1px) {
+            right: $quarter-standard-spacing;
+        }
+    }
+
+    &.bottom-left {
+        @include hidden-sm();
+        @include floating-element();
+
+        background-color: white;
+        bottom: $standard-spacing;
+        left: $standard-spacing;
+        width: 128px;
+        height: 128px;
+        border: 2px solid lightgray;
+        border-radius: $border-radius;
+        cursor: pointer;
+        button {
+            display: none;
+        }
+        .label {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            margin: 0;
+            padding: 2px;
+            z-index: 10;
+            color: black;
+            background-color: rgba(255, 255, 255, 0.5);
+            font-weight: bold;
+            line-height: 1;
+            text-align: center;
+        }
+
+        @media (max-width: $xs-width - 1px) {
+            left: $quarter-standard-spacing;
+        }
+    }
+}
+
+.Map ul.ContextMenu {
+    @include menu(
+        $item-border: none,
+        $item-padding: ($quarter-standard-spacing $half-standard-spacing),
+        $item-link-color: $text-color
+    );
+
+    > li:first-child {
+        border-top: 1px solid $menu-item-border-color;
+
+    }
+
+    position: absolute;
+    z-index: 11;
+}
