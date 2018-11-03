@@ -1,5 +1,3 @@
-import os
-
 from runcommands import command
 from runcommands.commands import local, show_config
 
@@ -7,9 +5,6 @@ from runcommands.commands import local, show_config
 @command
 def init(config):
     local(config, 'npm install')
-    if not os.path.exists('.env'):
-        local(config, 'virtualenv -p python3.6 .env')
-    local(config, '.env/bin/pip install -r requirements.txt')
 
 
 @command

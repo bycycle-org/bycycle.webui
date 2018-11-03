@@ -1,10 +1,10 @@
-venv ?= .env
+venv ?= .venv
 
 init: $(venv)
-	.env/bin/pip install -r requirements.txt
-	.env/bin/runcommand init
+	$(venv)/bin/pip install -r requirements.txt
+	$(venv)/bin/runcommand init
 
 $(venv):
-	virtualenv -p python3.6 .env
+	python3 -m venv $(venv)
 
 .PHONY = init
