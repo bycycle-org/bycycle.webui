@@ -1,19 +1,19 @@
 import debounce from 'lodash/debounce';
 
-import extent from 'ol/extent';
-import proj from 'ol/proj';
+import { containsCoordinate, containsExtent } from 'ol/extent';
+import { transform, transformExtent } from 'ol/proj';
 
-import OLMap from 'ol/map';
-import View from 'ol/view';
+import OLMap from 'ol/Map';
+import View from 'ol/View';
 
-import BingMapsSource from 'ol/source/bingmaps';
-import OSMSource from 'ol/source/osm';
-import VectorSource from 'ol/source/vector';
-import TileDebugSource from 'ol/source/tiledebug';
-import TileWMSSource from 'ol/source/tilewms';
+import BingMapsSource from 'ol/source/BingMaps';
+import OSMSource from 'ol/source/OSM';
+import VectorSource from 'ol/source/Vector';
+import TileDebugSource from 'ol/source/TileDebug';
+import TileWMSSource from 'ol/source/TileWMS';
 
-import TileLayer from 'ol/layer/tile';
-import VectorLayer from 'ol/layer/vector'
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
 
 import {
     ANIMATION_DURATION,
@@ -198,9 +198,9 @@ export default class Map {
         const currentExtent = this.view.calculateExtent();
         const length = coordinatesOrExtent.length;
         if (length === 2) {
-            return extent.containsCoordinate(currentExtent, coordinatesOrExtent);
+            return containsCoordinate(currentExtent, coordinatesOrExtent);
         } else if (length === 4) {
-            return extent.containsExtent(currentExtent, coordinatesOrExtent);
+            return containsExtent(currentExtent, coordinatesOrExtent);
         }
         throw new TypeError('Expected array of length 2 (coordinates) or 4 (extent)');
     }
@@ -290,7 +290,7 @@ export default class Map {
      */
     transform (coordinate, reverse = false) {
         const { source, destination } = this._getTransformProjections(reverse);
-        return proj.transform(coordinate, source, destination);
+        return transform(coordinate, source, destination);
     }
 
     /**
@@ -298,7 +298,7 @@ export default class Map {
      */
     transformExtent (extent, reverse = false) {
         const { source, destination } = this._getTransformProjections(reverse);
-        return proj.transformExtent(extent, source, destination);
+        return transformExtent(extent, source, destination);
     }
 
     _getTransformProjections (reverse = false,

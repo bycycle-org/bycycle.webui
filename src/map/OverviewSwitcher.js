@@ -1,6 +1,6 @@
-import PluggableMap from 'ol/pluggablemap';
-import TileLayer from 'ol/layer/tile';
-import View from 'ol/view';
+import Map from 'ol/Map';
+import TileLayer from 'ol/layer/Tile';
+import View from 'ol/View';
 
 
 export default class OverviewSwitcher {
@@ -24,7 +24,7 @@ export default class OverviewSwitcher {
 
         this.baseLayer = this.baseLayers.find(layer => layer.getVisible());
 
-        this.map = new PluggableMap({
+        this.map = new Map({
             controls: [],
             interactions: [],
             layers: this.baseLayers,

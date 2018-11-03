@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import trim from 'lodash/trim';
 
-import extent from 'ol/extent';
+import { boundingExtent, buffer as bufferExtent } from 'ol/extent';
 
 import { makeApiUrl } from '../util';
 import { decProgressCounter, incProgressCounter } from './index';
@@ -47,7 +47,7 @@ export function doSearch (suppressErrors = false, selectIfOne = false) {
                 }
 
                 const coordinates = results.map(result => result.geom.coordinates);
-                const bounds = extent.boundingExtent(coordinates);
+                const bounds = boundingExtent(coordinates);
                 let state;
 
                 if (numResults === 1 && selectIfOne) {
@@ -63,7 +63,7 @@ export function doSearch (suppressErrors = false, selectIfOne = false) {
                 }
 
                 dispatch(setSearchState(state));
-                dispatch(setExtent(extent.buffer(bounds, 100), true));
+                dispatch(setExtent(bufferExtent(bounds, 100), true));
             })
             .catch(error => {
                 if (error.response) {

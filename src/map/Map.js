@@ -4,9 +4,9 @@ import { connect } from 'react-redux';
 import debounce from 'lodash/debounce';
 import isEqual from 'lodash/isEqual';
 
-import Feature from 'ol/feature';
-import LineString from 'ol/geom/linestring';
-import Point from 'ol/geom/point';
+import Feature from 'ol/Feature';
+import LineString from 'ol/geom/LineString';
+import Point from 'ol/geom/Point';
 
 import {
     selectSearchResult,
@@ -85,10 +85,13 @@ class Map extends Component {
         const markerLayer = map.getOverlayLayer('Search Results');
         const markerSource = markerLayer.getSource();
 
+        // Necessary because the OL map swallows click events.
+        map.addListener('click', event => props.setMenuStates(false));
+
         map.addFeatureListener(
             'singleclick',
             feature => {
-                props.selectSearchResult(feature.get('result'))
+                props.selectSearchResult(feature.get('result'));
             },
             undefined,
             markerLayer
@@ -297,6 +300,10 @@ function mapDispatchToProps (dispatch) {
         setCenter: center => dispatch(setCenter(center)),
         setMapState: state => dispatch(setMapState(state)),
         setMenuState: open => dispatch(setMenuState(open)),
+        setMenuStates: open => {
+            dispatch(setMenuState(open));
+            dispatch(setMapContextMenuState(open));
+        },
         setMapContextMenuState: (open, top, left) => {
             dispatch(setMapContextMenuState(open, top, left));
         },

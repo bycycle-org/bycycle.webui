@@ -2,7 +2,11 @@ import axios from 'axios';
 
 import trim from 'lodash/trim';
 
-import extent from 'ol/extent';
+import {
+    buffer as bufferExtent,
+    createEmpty as createEmptyExtent,
+    extend as extendExtent
+} from 'ol/extent';
 
 import { makeApiUrl } from '../util';
 import { decProgressCounter, incProgressCounter } from './index';
@@ -52,11 +56,11 @@ export function getDirections (suppressErrors = false, selectIfOne = true) {
                     return;
                 }
 
-                const bounds = extent.createEmpty();
+                const bounds = createEmptyExtent();
                 let state;
 
                 for (let result of results) {
-                    extent.extend(bounds, result.bounds);
+                    extendExtent(bounds, result.bounds);
                 }
 
                 if (results.length === 1 && selectIfOne) {
@@ -76,7 +80,7 @@ export function getDirections (suppressErrors = false, selectIfOne = true) {
                 }
 
                 dispatch(setDirectionsState(state));
-                dispatch(setExtent(extent.buffer(bounds, 100)));
+                dispatch(setExtent(bufferExtent(bounds, 100)));
             })
             .catch(error => {
                 if (error.response) {

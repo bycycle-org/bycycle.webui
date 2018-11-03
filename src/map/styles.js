@@ -1,8 +1,8 @@
-import Style from 'ol/style/style';
-import Circle from 'ol/style/circle';
-import Fill from 'ol/style/fill';
-import RegularShape from 'ol/style/regularshape';
-import Stroke from 'ol/style/stroke';
+import Style from 'ol/style/Style';
+import Circle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import RegularShape from 'ol/style/RegularShape';
+import Stroke from 'ol/style/Stroke';
 
 
 export const BOUNDARY_STYLE = new Style({
