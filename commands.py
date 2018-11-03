@@ -1,3 +1,6 @@
+import os
+import shutil
+
 from runcommands import command
 from runcommands.commands import local, sync
 from runcommands.util import printer
@@ -16,12 +19,26 @@ def install(upgrade=False):
 
 
 @command
-def build():
+def build(clean_=False):
+    if clean_:
+        clean()
     local('npm run build')
 
 
 @command
-def deploy(host, build_=True):
+def clean():
+    def rmdir(path):
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            printer.warning(
+                'Path does not exist or is not a directory: {path}'
+                .format_map(locals()))
+    rmdir('build')
+
+
+@command
+def deploy(host, build_=True, clean_=False):
     if build_:
-        build()
+        build(clean_=clean_)
     sync('build/', '/sites/bycycle.org/frontend/', host, run_as='bycycle')
