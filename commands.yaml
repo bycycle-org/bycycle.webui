@@ -1,0 +1,10 @@
+---
+globals:
+  env: "dev"
+
+envs:
+  dev:
+    host: "localhost"
+  prod:
+    host: "bycycle.org"
+
