@@ -95,7 +95,7 @@ export function getDirections (suppressErrors = false, selectIfOne = true) {
                         detail: process.env.REACT_APP_DEBUG ? error.message : null
                     }));
                 } else {
-                    console.log(error.config);
+                    console.error(error);
                 }
             })
             .finally(() => {

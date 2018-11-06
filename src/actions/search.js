@@ -78,7 +78,7 @@ export function doSearch (suppressErrors = false, selectIfOne = false) {
                         detail: process.env.REACT_APP_DEBUG ? error.message : null
                     }));
                 } else {
-                    console.log(error.config);
+                    console.error(error);
                 }
             })
             .finally(() => {
