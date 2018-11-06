@@ -16,7 +16,7 @@ export const SET_SEARCH_ERROR = 'SET_SEARCH_ERROR';
 export const SELECT_SEARCH_RESULT = 'SELECT_SEARCH_RESULT';
 
 
-const URL = makeApiUrl('/');
+const URL = makeApiUrl('/search');
 
 
 export function doSearch (suppressErrors = false, selectIfOne = false) {
