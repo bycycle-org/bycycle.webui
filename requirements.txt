@@ -1,1 +1,1 @@
-runcommands>=1.0a31
+runcommands>=1.0a32
