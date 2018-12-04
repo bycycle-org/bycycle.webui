@@ -1,10 +1,10 @@
 ---
 globals:
-  env: "dev"
+  env: "development"
 
 envs:
-  dev:
+  development:
     host: "localhost"
-  prod:
+  production:
     host: "bycycle.org"
 
