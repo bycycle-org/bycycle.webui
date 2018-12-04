@@ -2,7 +2,7 @@ import os
 import shutil
 
 from runcommands import command
-from runcommands.commands import local, sync
+from runcommands.commands import local, remote, sync
 from runcommands.util import printer
 
 
@@ -38,7 +38,8 @@ def clean():
 
 
 @command
-def deploy(host, build_=True, clean_=False):
+def deploy(host, to='/sites/bycycle.org/frontend/', build_=True, clean_=False, overwrite=False):
     if build_:
         build(clean_=clean_)
-    sync('build/', '/sites/bycycle.org/frontend/', host, run_as='bycycle')
+    sync('build/', to, host, run_as='bycycle', delete=overwrite)
+    remote(('chown -R bycycle:www-data', to), sudo=True)
