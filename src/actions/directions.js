@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-import trim from 'lodash/trim';
-
 import {
     buffer as bufferExtent,
     createEmpty as createEmptyExtent,
@@ -30,7 +28,7 @@ export function getDirections (suppressErrors = false, selectIfOne = true) {
         const state = getState();
         const { from, fromPoint, to, toPoint } = state.directions;
 
-        if (!(trim(from) && trim(to))) {
+        if (!(from.trim() && to.trim())) {
             return dispatch(resetDirectionsState({ from, to }));
         }
 

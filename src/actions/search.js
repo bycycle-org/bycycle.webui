@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-import trim from 'lodash/trim';
-
 import { boundingExtent, buffer as bufferExtent } from 'ol/extent';
 
 import { makeApiUrl } from '../util';
@@ -24,7 +22,7 @@ export function doSearch (suppressErrors = false, selectIfOne = false) {
         const state = getState().search;
         const { term, termPoint } = state;
 
-        if (!trim(term)) {
+        if (!term.trim()) {
             return dispatch(resetSearchState());
         }
 

@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 
 import debounce from 'lodash/debounce';
-import trim from 'lodash/trim';
 
 import {
     doSearch,
@@ -107,7 +106,7 @@ function mapDispatchToProps (dispatch) {
             dispatch(doSearch());
         },
         setFunction: (name, term, termPoint) => {
-            term = trim(term);
+            term = term.trim();
             dispatch(resetSearchState());
             if (term) {
                 dispatch(setTo(term, termPoint));
