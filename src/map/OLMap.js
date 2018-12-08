@@ -6,18 +6,21 @@ import { transform, transformExtent } from 'ol/proj';
 import OLMap from 'ol/Map';
 import View from 'ol/View';
 
+import MVTFormat from 'ol/format/MVT';
+
 import BingMapsSource from 'ol/source/BingMaps';
 import OSMSource from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
-import TileDebugSource from 'ol/source/TileDebug';
-import TileWMSSource from 'ol/source/TileWMS';
+import VectorTileSource from 'ol/source/VectorTile';
 
+import LayerGroup from 'ol/layer/Group';
 import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
+import VectorTileLayer from 'ol/layer/VectorTile';
 
 import {
     ANIMATION_DURATION,
-    DUMMY_MAP,
+    DEBUG,
     MIN_ZOOM,
     MAX_ZOOM,
     NATIVE_PROJECTION,
@@ -33,29 +36,40 @@ import {
     SELECTED_MARKER_STYLE
 } from './styles';
 
+import { makeApiUrl } from '../util';
+
 import OverviewSwitcher from './OverviewSwitcher';
 
 
 const BING_API_KEY = process.env.REACT_APP_BING_API_KEY;
-const MAP_SERVER_URL = process.env.REACT_APP_MAP_SERVER_URL;
-const MAP_SERVER_WORKSPACE = process.env.REACT_APP_MAP_SERVER_WORKSPACE;
 
 
 export default class Map {
     constructor () {
         let baseLayers = [];
 
-        if (DUMMY_MAP) {
-            baseLayers = [
-                this.makeWMSLayer('streets', 'Streets', null, true),
-                this.makeWMSLayer('intersections', 'Intersections')
-            ];
         } else {
             baseLayers = [
                 this.makeBaseLayer('CanvasLight', 'Map', null, true),
                 this.makeBaseLayer('AerialWithLabels', 'Satellite'),
                 this.makeOSMLayer()
             ]
+        if (DEBUG) {
+            const debugLayerGroup = new LayerGroup({
+                label: 'Debug',
+                shortLabel: 'Debug',
+                layers: [
+                    this.makeMVTLayer('streets', 'Streets', null, true),
+                    this.makeMVTLayer('intersections', 'Intersections', null, true)
+                ]
+            });
+
+            debugLayerGroup.getSource = function () {
+                return this.getLayers().getArray()[0].getSource();
+            };
+
+            baseLayers[0].setVisible(false);
+            baseLayers = [debugLayerGroup].concat(baseLayers);
         }
 
         const overlayLayers = [
@@ -218,24 +232,16 @@ export default class Map {
 
     makeOSMLayer (label = 'OpenStreetMap', shortLabel = 'OSM', visible = false) {
         let source = new OSMSource();
-        if (DUMMY_MAP) {
-            source = new TileDebugSource({
-                projection: source.getProjection(),
-                tileGrid: source.getTileGrid()
-            });
-        }
         return new TileLayer({ label, shortLabel, source, visible });
     }
-    makeWMSLayer (layerName, label, shortLabel = null, visible = false) {
+
+    makeMVTLayer (layerName, label, shortLabel = null, visible = false) {
         shortLabel = shortLabel || label;
-        const source = new TileWMSSource({
-            serverType: 'geoserver',
-            url: `${MAP_SERVER_URL}/${MAP_SERVER_WORKSPACE}/wms`,
-            params: {
-                LAYERS: `${MAP_SERVER_WORKSPACE}:${layerName}`
-            }
+        const source = new VectorTileSource({
+            format: new MVTFormat(),
+            url: makeApiUrl(`tiles/${layerName}/{x}/{y}/{z}`)
         });
-        return new TileLayer({ label, shortLabel, source, visible });
+        return new VectorTileLayer({label, shortLabel, source, visible});
     }
 
     makeOverlayLayer (label, style) {
