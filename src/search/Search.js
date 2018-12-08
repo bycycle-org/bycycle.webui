@@ -92,7 +92,7 @@ function mapDispatchToProps (dispatch) {
         } else {
             dispatch(resetSearchState());
         }
-    }, 200);
+    }, 1000);
 
     return {
         onChange: term => {
