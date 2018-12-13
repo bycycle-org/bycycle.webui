@@ -11,6 +11,7 @@ if (DEBUG) {
 }
 export const BASE_LAYER_LABELS = baseLayers;
 
+export const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
 export const GEOGRAPHIC_SRID = '4326';
 export const GEOGRAPHIC_PROJECTION = getProjection(`EPSG:${GEOGRAPHIC_SRID}`);
 export const NATIVE_SRID = '3857';

@@ -8,10 +8,10 @@ import View from 'ol/View';
 
 import MVTFormat from 'ol/format/MVT';
 
-import BingMapsSource from 'ol/source/BingMaps';
 import OSMSource from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
 import VectorTileSource from 'ol/source/VectorTile';
+import XYZSource from 'ol/source/XYZ';
 
 import LayerGroup from 'ol/layer/Group';
 import TileLayer from 'ol/layer/Tile';
@@ -21,6 +21,7 @@ import VectorTileLayer from 'ol/layer/VectorTile';
 import {
     ANIMATION_DURATION,
     DEBUG,
+    MAPBOX_ACCESS_TOKEN,
     MIN_ZOOM,
     MAX_ZOOM,
     NATIVE_PROJECTION,
@@ -41,19 +42,14 @@ import { makeApiUrl } from '../util';
 import OverviewSwitcher from './OverviewSwitcher';
 
 
-const BING_API_KEY = process.env.REACT_APP_BING_API_KEY;
-
-
 export default class Map {
     constructor () {
-        let baseLayers = [];
+        let baseLayers = [
+            this.makeBaseLayer('wylee/cjpa3kgvr149r2qmism8fqrnh', 'Map', null, true),
+            this.makeBaseLayer('wylee/cjpg5l0gb5hgh2sn9p4u49gyw', 'Satellite (Labels)'),
+            this.makeOSMLayer()
+        ];
 
-        } else {
-            baseLayers = [
-                this.makeBaseLayer('CanvasLight', 'Map', null, true),
-                this.makeBaseLayer('AerialWithLabels', 'Satellite'),
-                this.makeOSMLayer()
-            ]
         if (DEBUG) {
             const debugLayerGroup = new LayerGroup({
                 label: 'Debug',
@@ -221,11 +217,10 @@ export default class Map {
 
     /* Layers */
 
-    makeBaseLayer (imagerySet, label, shortLabel = null, visible = false) {
+    makeBaseLayer (mapboxId, label, shortLabel = null, visible = false) {
         shortLabel = shortLabel || label;
-        const source = new BingMapsSource({
-            key: BING_API_KEY,
-            imagerySet
+        const source = new XYZSource({
+            url: `//api.mapbox.com/styles/v1/${mapboxId}/tiles/256/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`
         });
         return new TileLayer({ label, shortLabel, source, visible });
     }
