@@ -1,1 +1,1 @@
-import 'core-js/modules/es7.promise.finally.js';
+import 'core-js/modules/es.promise.finally.js';
