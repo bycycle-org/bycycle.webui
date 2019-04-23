@@ -7,4 +7,3 @@ envs:
     host: "localhost"
   production:
     host: "bycycle.org"
-
