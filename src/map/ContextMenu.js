@@ -153,7 +153,7 @@ function mapDispatchToProps (dispatch) {
         whatsHere: (map, pixel) => {
             const [x, y, location] = getCoordinates(map, pixel);
             dispatch(resetDirectionsState());
-            dispatch(setFunction('search'));
+            dispatch(setFunction('query'));
             dispatch(setSearchTerm(location, null, [x, y]));
             dispatch(doSearch(false, true));
         },
