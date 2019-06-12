@@ -1,316 +1,404 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
-
-import debounce from 'lodash/debounce';
-import isEqual from 'lodash/isEqual';
-
+import { Map, View } from 'ol';
+import { containsCoordinate, containsExtent } from 'ol/extent';
+import { transform, transformExtent } from 'ol/proj';
+import Collection from 'ol/Collection';
 import Feature from 'ol/Feature';
-import LineString from 'ol/geom/LineString';
+import Overlay from 'ol/Overlay';
 import Point from 'ol/geom/Point';
+import GeoJSONFormat from 'ol/format/GeoJSON';
+import MVTFormat from 'ol/format/MVT';
+import LayerGroup from 'ol/layer/Group';
+import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
+import VectorTileLayer from 'ol/layer/VectorTile';
+import OSMSource from 'ol/source/OSM';
+import VectorSource from 'ol/source/Vector';
+import VectorTileSource from 'ol/source/VectorTile';
+import XYZSource from 'ol/source/XYZ';
+import Circle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import Stroke from 'ol/style/Stroke';
+import Style from 'ol/style/Style';
 
+import { makeApiUrl } from '../util';
 import {
-    selectSearchResult,
-    setBaseLayer,
-    setCenter,
-    setMapContextMenuState,
-    setMapState,
-    setMenuState,
-    setZoom,
-    zoomIn,
-    zoomOut,
-    zoomToFullExtent
-} from '../actions';
+    DEBUG,
+    ANIMATION_DURATION,
+    DEFAULT_CENTER,
+    DEFAULT_ZOOM,
+    MIN_ZOOM,
+    MAX_ZOOM,
+    GEOGRAPHIC_PROJECTION,
+    NATIVE_PROJECTION,
+    MAPBOX_API_URL,
+    MAPBOX_ACCESS_TOKEN,
+    MY_LOCATION_ACCURACY_THRESHOLD,
+    STREET_LEVEL_ZOOM
+} from './const';
+import { BOUNDARY_STYLE, MY_LOCATION_ACCURACY_STYLE, MY_LOCATION_STYLE } from './styles';
 
-import { ANIMATION_DURATION, STREET_LEVEL_ZOOM } from './const';
-import ContextMenu from './ContextMenu';
-import OLMap from './OLMap';
-import { HOVER_MARKER_STYLE, MARKER_STYLE } from "./styles";
-
-import './Map.css';
-
-
-class Map extends Component {
-    constructor (props) {
-        super(props);
-        this.map = new OLMap();
-        this.handleContextMenu = this.handleContextMenu.bind(this);
-        this.disableContextMenu = this.disableContextMenu.bind(this);
-    }
-
-    render() {
-        const map = this.map;
-        const props = this.props;
-        const nextBaseLayer = map.getNextBaseLayer().get('label');
-        const mapRef = this.refs.map;
-        const dimensions = mapRef ? [mapRef.clientWidth, mapRef.clientHeight] : [0, 0];
-
-        return (
-            <div className="Map"
-                 ref="map"
-                 onContextMenu={this.handleContextMenu}>
-                <div className="controls bottom-right column"
-                     ref="bottomRight"
-                     onContextMenu={this.disableContextMenu}>
-                    <button title="Zoom to full extent"
-                            className="material-icons"
-                            onClick={props.zoomToFullExtent}>public</button>
-                    <button title="Zoom in"
-                            className="material-icons"
-                            onClick={props.zoomIn}>add</button>
-                    <button title="Zoom out"
-                            className="material-icons"
-                            onClick={props.zoomOut}>remove</button>
-                </div>
-
-                <div title={`Show ${nextBaseLayer} layer`}
-                     className="controls bottom-left column"
-                     ref="bottomLeft"
-                     onClick={event => props.setBaseLayer(nextBaseLayer)}
-                     onContextMenu={this.disableContextMenu}>
-                    <div className="label">{nextBaseLayer}</div>
-                </div>
-
-                <ContextMenu map={map}
-                             containerDimensions={dimensions}
-                             streetLevelZoom={STREET_LEVEL_ZOOM}
-                />
-            </div>
-        );
-    }
-
-    componentDidMount () {
-        const map = this.map;
-        const props = this.props;
-        const refs = this.refs;
-        const markerLayer = map.getOverlayLayer('Search Results');
-        const markerSource = markerLayer.getSource();
-
-        // Necessary because the OL map swallows click events.
-        map.addListener('click', event => props.setMenuStates(false));
-
-        map.addFeatureListener(
-            'singleclick',
-            feature => {
-                props.selectSearchResult(feature.get('result'));
-            },
-            undefined,
-            markerLayer
-        );
-
-        map.addFeatureListener(
-            'pointermove',
-            feature => {
-                if (!feature.get('selected')) {
-                    feature.setStyle(HOVER_MARKER_STYLE);
-                }
-            },
-            event => {
-                const features = markerSource.getFeatures();
-                for (let feature of features) {
-                    if (!feature.get('selected')) {
-                        feature.setStyle(MARKER_STYLE)
-                    }
-                }
-            },
-            markerLayer,
-            10  /* debounce */
-        );
-
-        // This keeps the Redux map state in sync with changes made to
-        // the map via its internal interactions (panning, scroll-wheel
-        // zooming, etc).
-        map.addListener('moveend', event => {
-            props.setMapState({
-                center: map.getCenter(),
-                extent: map.getExtent(),
-                zoom: map.getZoom()
+export default class MapService {
+    constructor() {
+        const baseLayers = [];
+        if (DEBUG) {
+            const STREET_STYLE = [
+                new Style({
+                    stroke: new Stroke({
+                        color: '#686868',
+                        width: 6
+                    })
+                }),
+                new Style({
+                    stroke: new Stroke({
+                        color: '#a8a8a8',
+                        width: 4
+                    })
+                })
+            ];
+            const INTERSECTION_STYLE = new Style({
+                image: new Circle({
+                    radius: 6,
+                    stroke: new Stroke({
+                        color: '#686868',
+                        width: 2
+                    }),
+                    fill: new Fill({
+                        color: 'rgba(255, 255, 255, 0.5)'
+                    })
+                })
             });
+            baseLayers.push(
+                new LayerGroup({
+                    label: 'Debug',
+                    shortLabel: 'Debug',
+                    layers: [
+                        this.makeMVTLayer('street', 'Streets', null, true, STREET_STYLE),
+                        this.makeMVTLayer(
+                            'intersection',
+                            'Intersections',
+                            null,
+                            true,
+                            INTERSECTION_STYLE
+                        )
+                    ],
+                    visible: false
+                })
+            );
+        }
+
+        baseLayers.push(
+            this.makeBaseLayer('wylee/cjpa3kgvr149r2qmism8fqrnh', 'Map'),
+            this.makeBaseLayer('wylee/cjpg5l0gb5hgh2sn9p4u49gyw', 'Satellite'),
+            this.makeOSMLayer()
+        );
+
+        this.baseLayers = baseLayers;
+
+        this.myLocationLayer = new VectorLayer({
+            visible: false,
+            source: new VectorSource({
+                features: new Collection()
+            })
         });
 
-        map.initialize(refs.map, refs.bottomLeft, props);
-    }
+        this.vectorLayer = new VectorLayer({
+            visible: false,
+            source: new VectorSource({
+                features: new Collection()
+            })
+        });
 
-    componentWillReceiveProps (newProps) {
-        const map = this.map;
-        const props = this.props;
+        this.overlays = [];
 
-        // Current
+        this.view = new View({
+            minZoom: MIN_ZOOM,
+            maxZoom: MAX_ZOOM
+        });
 
-        const searchResults = props.search.results;
-        const selectedSearchResult = props.search.selectedResult;
-        const selectedSearchResultId = selectedSearchResult ? selectedSearchResult.id : null;
+        this.map = new Map({
+            controls: [],
+            layers: baseLayers.concat([
+                this.myLocationLayer,
+                this.vectorLayer,
+                this.makeBoundaryLayer()
+            ]),
+            view: this.view
+        });
 
-        const selectedDirectionsResult = props.directions.selectedResult;
-        const selectedDirectionsResultId = selectedDirectionsResult ? selectedDirectionsResult.id : null;
+        this.setBaseLayer(baseLayers[0]);
 
-        const center = map.getCenter();
-        const extent = map.getExtent();
-        const zoom = map.getZoom();
-
-        const searchResultsLayer = map.getOverlayLayer('Search Results');
-        const searchResultsSource = searchResultsLayer.getSource();
-
-        const directionsResultsLayer = map.getOverlayLayer('Directions');
-        const directionsResultsSource = directionsResultsLayer.getSource();
-
-        // New
-
-        const newSearchResults = newProps.search.results;
-        const newSelectedSearchResult = newProps.search.selectedResult;
-
-        const newSelectedDirectionsResult = newProps.directions.selectedResult;
-
-        const newCenter = newProps.center;
-        const newExtent = newProps.extent;
-        const newZoom = newProps.zoom;
-        const onlyIfNotVisible = newProps.onlyIfNotVisible;
-
-        if (newProps.baseLayer !== props.baseLayer) {
-            map.setBaseLayer(newProps.baseLayer);
-        }
-
-        if (!isEqual(newCenter, center) && newCenter) {
-            map.setCenter(newCenter, newProps.zoom, undefined, undefined, onlyIfNotVisible);
-        } else if (!isEqual(newExtent, extent) && newExtent) {
-            map.fitExtent(newExtent, undefined, undefined, undefined, onlyIfNotVisible);
-        } else if (newZoom !== zoom) {
-            map.setZoom(newZoom);
-        }
-
-        if (newSearchResults.length) {
-            const searchResultIds = searchResults.map(r => r.id);
-            const newSearchResultIds = newSearchResults.map(r => r.id);
-            directionsResultsSource.clear(true);
-            if (!isEqual(newSearchResultIds, searchResultIds)) {
-                let features = [];
-                for (let result of newSearchResults) {
-                    features.push(new Feature({
-                        geometry: new Point(result.geom.coordinates),
-                        result: result,
-                        properties: {
-                            name: result.name
+        if (DEBUG) {
+            this.on('click', event => {
+                const baseLayers = this.baseLayers[0].get('layers').getArray();
+                this.map.forEachFeatureAtPixel(
+                    event.pixel,
+                    feature => {
+                        const layer = feature.get('layer');
+                        const props = ['layer', 'id', 'name'];
+                        const data = [];
+                        if (layer === 'street') {
+                            props.push(
+                                'start_node_id',
+                                'end_node_id',
+                                'highway',
+                                'bicycle',
+                                'oneway_bicycle'
+                            );
                         }
-                    }));
-                }
-                searchResultsSource.clear(true);
-                searchResultsSource.addFeatures(features);
-            }
-        } else if (newSelectedSearchResult) {
-            directionsResultsSource.clear(true);
-            if (newSelectedSearchResult.id !== selectedSearchResultId) {
-                searchResultsSource.clear();
-                searchResultsSource.addFeature(new Feature({
-                    geometry: new Point(newSelectedSearchResult.geom.coordinates),
-                    result: newSelectedSearchResult,
-                    selected: true,
-                    properties: {
-                        name: newSelectedSearchResult.name
+                        for (let prop of props) {
+                            data.push(`${prop}: ${feature.get(prop)}`);
+                        }
+                        console.log(data.join('\n'));
+                    },
+                    {
+                        layerFilter: layer => {
+                            for (let baseLayer of baseLayers) {
+                                if (layer === baseLayer) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        }
                     }
-                }));
-            }
-        } else if (newSelectedDirectionsResult) {
-            searchResultsSource.clear(true);
-            if (newSelectedDirectionsResult.id !== selectedDirectionsResultId) {
-                const start = newSelectedDirectionsResult.start;
-                const end = newSelectedDirectionsResult.end;
-                const linestring = newSelectedDirectionsResult.linestring;
-                const coordinates = linestring.coordinates;
+                );
+            });
+        }
+    }
 
-                const features = [
-                    new Feature({
-                        geometry: new Point(start.geom.coordinates),
-                        type: 'start',
-                        properties: {
-                            name: start.name
-                        }
-                    }),
+    setTarget(target) {
+        this.map.setTarget(target);
+    }
 
-                    new Feature({
-                        geometry: new LineString(coordinates),
-                        type: 'route',
-                        properties: {
-                            name: newSelectedDirectionsResult.name
-                        }
-                    }),
+    getSize() {
+        const size = this.map.getSize();
+        return size ? size : [0, 0];
+    }
 
-                    new Feature({
-                        geometry: new Point(end.geom.coordinates),
-                        type: 'end',
-                        properties: {
-                            name: end.name
-                        }
-                    }),
-                ];
+    /* Events */
 
-                directionsResultsSource.clear(true);
-                directionsResultsSource.addFeatures(features);
-            }
+    on(...args) {
+        return this.map.on(...args);
+    }
+
+    /* Layers */
+
+    makeBaseLayer(mapboxLayerId, label, shortLabel = null, visible = false) {
+        const url = [
+            `${MAPBOX_API_URL}/styles/v1/${mapboxLayerId}/tiles/256/{z}/{x}/{y}`,
+            `access_token=${MAPBOX_ACCESS_TOKEN}`
+        ].join('?');
+        const source = new XYZSource({ url });
+        shortLabel = shortLabel || label;
+        return new TileLayer({ label, shortLabel, source, visible });
+    }
+
+    makeOSMLayer(label = 'OpenStreetMap', shortLabel = 'OSM', visible = false) {
+        let source = new OSMSource();
+        return new TileLayer({ label, shortLabel, source, visible });
+    }
+
+    makeMVTLayer(layerName, label, shortLabel = null, visible = false, style = undefined) {
+        shortLabel = shortLabel || label;
+        const source = new VectorTileSource({
+            format: new MVTFormat(),
+            url: makeApiUrl(`map/tiles/${layerName}/{x}/{y}/{z}`)
+        });
+        return new VectorTileLayer({ label, shortLabel, source, visible, style });
+    }
+
+    makeBoundaryLayer() {
+        const source = new VectorSource({
+            format: new GeoJSONFormat(),
+            url: makeApiUrl('map/street-boundary')
+        });
+        return new VectorLayer({ source, style: BOUNDARY_STYLE });
+    }
+
+    setBaseLayer(layer) {
+        for (let baseLayer of this.baseLayers) {
+            baseLayer.setVisible(baseLayer === layer);
+        }
+        this.baseLayer = layer;
+    }
+
+    /* Center */
+
+    getCenter() {
+        return this.view.getCenter();
+    }
+
+    setCenter(center, zoom, onlyIfNotVisible = false, duration = ANIMATION_DURATION) {
+        if (onlyIfNotVisible && this.isVisible(center)) {
+            return;
+        }
+        if (typeof zoom === 'undefined') {
+            this.view.animate({ center, duration });
         } else {
-            searchResultsSource.clear(true);
-            directionsResultsSource.clear(true);
-        }
-
-        if (!isEqual(newProps.info.boundary, props.info.boundary)) {
-            const boundaryLine = new LineString(newProps.info.boundary);
-            const boundaryFeature = new Feature({ geometry: boundaryLine });
-            const layer = this.map.getOverlayLayer('Boundary');
-            layer.getSource().addFeature(boundaryFeature);
+            this.view.animate({ center, zoom, duration });
         }
     }
 
-    handleContextMenu (event) {
-        event.preventDefault();
-        const top = event.pageY;
-        const left = event.pageX;
-        this.props.setMenuState(false);
-        this.props.setMapContextMenuState(true, top, left);
+    setDefaultCenter() {
+        this.setCenter(DEFAULT_CENTER, DEFAULT_ZOOM);
     }
 
-    disableContextMenu (event) {
-        event.preventDefault();
-        event.stopPropagation();
+    getCoordinateFromPixel(pixel, native = true) {
+        let coordinate = this.map.getCoordinateFromPixel(pixel);
+        if (!native && coordinate != null) {
+            coordinate = this.transform(coordinate);
+        }
+        return coordinate;
+    }
+
+    /* Extent */
+
+    getExtent() {
+        return this.view.calculateExtent();
+    }
+
+    fitExtent(extent, onlyIfNotVisible = false, options = {}, duration = ANIMATION_DURATION) {
+        if (onlyIfNotVisible && this.isVisible(extent)) {
+            return;
+        }
+        this.view.fit(extent, { duration, ...options });
+    }
+
+    isVisible(coordinatesOrExtent) {
+        const currentExtent = this.view.calculateExtent();
+        const length = coordinatesOrExtent.length;
+        if (length === 2) {
+            return containsCoordinate(currentExtent, coordinatesOrExtent);
+        } else if (length === 4) {
+            return containsExtent(currentExtent, coordinatesOrExtent);
+        }
+        throw new TypeError('Expected array of length 2 (coordinates) or 4 (extent)');
+    }
+
+    /* Zoom */
+
+    getZoom() {
+        return this.view.getZoom();
+    }
+
+    setZoom(zoom, duration = ANIMATION_DURATION) {
+        if (duration > 0) {
+            this.view.animate({ zoom, duration });
+        } else {
+            this.view.setZoom(zoom);
+        }
+    }
+
+    zoomIn() {
+        this.setZoom(this.getZoom() + 1);
+    }
+
+    zoomOut() {
+        this.setZoom(this.getZoom() - 1);
+    }
+
+    zoomToStreetLevel() {
+        this.setZoom(Math.max(STREET_LEVEL_ZOOM, this.getZoom()));
+    }
+
+    /* Location */
+
+    showMyLocation(locationData) {
+        const source = this.myLocationLayer.getSource();
+        const { position, accuracy, accuracyGeometry, errorMessage } = locationData;
+        source.clear();
+        if (position) {
+            const feature = new Feature({
+                geometry: new Point(position)
+            });
+            feature.setStyle(MY_LOCATION_STYLE);
+
+            if (accuracy > MY_LOCATION_ACCURACY_THRESHOLD && accuracyGeometry) {
+                const accuracyFeature = new Feature({
+                    geometry: accuracyGeometry
+                });
+                accuracyFeature.setStyle(MY_LOCATION_ACCURACY_STYLE);
+                source.addFeature(accuracyFeature);
+            }
+
+            source.addFeature(feature);
+            this.myLocationLayer.setVisible(true);
+        } else {
+            this.myLocationLayer.setVisible(false);
+        }
+
+        if (errorMessage) {
+            console.error(errorMessage);
+        }
+    }
+
+    /* Transform */
+
+    /**
+     * Transform native coordinate to geographic or vice versa.
+     *
+     * @param coordinate
+     * @param reverse If set, transform geographic coordinate to native
+     *        instead of native to geographic.
+     * @returns Transformed coordinates
+     */
+    transform(coordinate, reverse = false) {
+        const { source, destination } = this._getTransformProjections(reverse);
+        return transform(coordinate, source, destination);
+    }
+
+    /**
+     * Transform native extent to geographic or vice versa.
+     */
+    transformExtent(extent, reverse = false) {
+        const { source, destination } = this._getTransformProjections(reverse);
+        return transformExtent(extent, source, destination);
+    }
+
+    _getTransformProjections(
+        reverse = false,
+        source = NATIVE_PROJECTION,
+        destination = GEOGRAPHIC_PROJECTION
+    ) {
+        return reverse ? { source: destination, destination: source } : { source, destination };
+    }
+
+    /* Overlays */
+
+    addOverlay(
+        position,
+        className = null,
+        iconName = 'place',
+        positioning = 'bottom-center',
+        element = null
+    ) {
+        if (!element) {
+            element = document.createElement('DIV');
+            element.appendChild(document.createTextNode(iconName));
+            element.classList.add('material-icons', 'map-marker');
+            if (className) {
+                element.classList.add(className);
+            }
+        }
+        const overlay = new Overlay({ element, position, positioning, insertFirst: false });
+        this.map.addOverlay(overlay);
+        this.overlays.push(overlay);
+
+        // XXX: Hack to force map redraw. Not sure why this is
+        //      necessary, but overlays sometimes get added in the wrong
+        //      spot (just a little off) without it.
+        this.setCenter(this.getCenter());
+
+        return overlay;
+    }
+
+    clearOverlay(overlay) {
+        this.map.removeOverlay(overlay);
+    }
+
+    clearOverlays() {
+        for (let overlay of this.overlays) {
+            this.map.removeOverlay(overlay);
+        }
+        this.overlays.splice(0);
     }
 }
-
-
-function mapStateToProps (state) {
-    return {
-        ...state.map,
-        info: state.main.info,
-        search: state.search,
-        directions: state.directions
-    }
-}
-
-
-function mapDispatchToProps (dispatch) {
-    const debouncedZoomIn = debounce(() => {
-        dispatch(zoomIn());
-    }, ANIMATION_DURATION);
-
-    const debouncedZoomOut = debounce(() => {
-        dispatch(zoomOut());
-    }, ANIMATION_DURATION);
-
-    return {
-        zoomIn: () => debouncedZoomIn(),
-        zoomOut: () => debouncedZoomOut(),
-        zoomToFullExtent: () => dispatch(zoomToFullExtent()),
-        setBaseLayer: label => dispatch(setBaseLayer(label)),
-        setCenter: center => dispatch(setCenter(center)),
-        setMapState: state => dispatch(setMapState(state)),
-        setMenuState: open => dispatch(setMenuState(open)),
-        setMenuStates: open => {
-            dispatch(setMenuState(open));
-            dispatch(setMapContextMenuState(open));
-        },
-        setMapContextMenuState: (open, top, left) => {
-            dispatch(setMapContextMenuState(open, top, left));
-        },
-        setZoom: zoom => dispatch(setZoom(zoom)),
-        selectSearchResult: result => dispatch(selectSearchResult(result))
-    }
-}
-
-
-export default connect(mapStateToProps, mapDispatchToProps)(Map);

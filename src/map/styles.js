@@ -1,86 +1,57 @@
 import Style from 'ol/style/Style';
 import Circle from 'ol/style/Circle';
 import Fill from 'ol/style/Fill';
-import RegularShape from 'ol/style/RegularShape';
 import Stroke from 'ol/style/Stroke';
 
+export const BOUNDARY_STYLE = [
+    new Style({
+        stroke: new Stroke({
+            color: 'rgb(48, 48, 48)',
+            width: 10
+        })
+    }),
+    new Style({
+        stroke: new Stroke({
+            color: 'rgb(255, 255, 255)',
+            width: 6
+        })
+    })
+];
 
-export const BOUNDARY_STYLE = new Style({
+export const MY_LOCATION_STYLE = new Style({
+    image: new Circle({
+        radius: 8,
+        fill: new Fill({
+            color: 'rgba(10, 128, 255, 0.75)'
+        }),
+        stroke: new Stroke({
+            color: 'white',
+            width: 2
+        })
+    })
+});
+
+export const MY_LOCATION_ACCURACY_STYLE = new Style({
+    fill: new Fill({
+        color: 'rgba(10, 128, 255, 0.15)'
+    }),
     stroke: new Stroke({
-        color: 'gray',
-        lineDash: [16, 16],
-        width: 4
+        color: 'rgba(10, 128, 255, 0.25)',
+        width: 1
     })
 });
 
-
-export const MARKER_STYLE = new Style({
-    image: new Circle({
-        radius: 8,
-        fill: new Fill({
-            color: 'rgba(0, 0, 0, 0.75)'
-        }),
+export const ROUTE_STYLE = [
+    new Style({
         stroke: new Stroke({
             color: 'white',
-            width: 2
+            width: 10
         })
-    })
-});
-
-
-export const HOVER_MARKER_STYLE = new Style({
-    image: new Circle({
-        radius: 8,
-        fill: new Fill({
-            color: 'rgba(255, 128, 0, 0.85)'
-        }),
+    }),
+    new Style({
         stroke: new Stroke({
-            color: 'white',
-            width: 2
+            color: '#303030',
+            width: 6
         })
     })
-});
-
-
-export const SELECTED_MARKER_STYLE = new Style({
-    image: new Circle({
-        radius: 10,
-        fill: new Fill({
-            color: 'rgba(255, 0, 0, 0.85)'
-        }),
-        stroke: new Stroke({
-            color: 'white',
-            width: 2
-        })
-    })
-});
-
-
-export const ROUTE_STYLE = new Style({
-    stroke: new Stroke({
-        color: 'black',
-        width: 4
-    })
-});
-
-
-export const ROUTE_START_STYLE = new Style({
-    image: new Circle({
-        radius: 8,
-        fill: new Fill({
-            color: 'green'
-        })
-    })
-});
-
-
-export const ROUTE_END_STYLE = new Style({
-    image: new RegularShape({
-        radius: 10,
-        points: 4,
-        angle: Math.PI / 4,
-        fill: new Fill({
-            color: 'red'
-        })
-    })
-});
+];

@@ -1,0 +1,107 @@
+@import "../../node_modules/ol/ol";
+@import "./mixins";
+@import "./variables";
+
+html {
+    box-sizing: border-box;
+    color: $text-color;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: $font-size;
+    line-height: $line-height;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    position: relative;
+}
+
+a {
+    color: $link-color;
+}
+a:hover {
+    color: $link-hover-color;
+}
+
+@keyframes blinker {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.25;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+button.material-icons {
+    display: inline-block;
+
+    width: $button-width;
+    height: $button-width;
+
+    margin: 0;
+    padding: 0;
+
+    background-color: white;
+    color: $link-color;
+    border: 1px solid lighten($link-color, 33%);
+    border-radius: 2px;
+
+    &:hover {
+        border: 1px solid lighten($link-color, 25%);
+        box-shadow: 0 0 1px;
+        cursor: pointer;
+    }
+
+    &:disabled {
+        color: gray;
+        &:hover {
+            border: none;
+            box-shadow: none;
+            cursor: auto;
+        }
+    }
+}
+
+.material-icons.map-marker {
+    color: #ff4136;
+    font-size: 36px;
+    text-shadow: 2px -1px 2px #303030;
+    &.map-marker-start,
+    &.map-marker-end {
+        background-color: rgba(255, 255, 255, 0.5);
+        border: 2px solid #303030;
+        border-radius: $border-radius;
+    }
+    &.map-marker-start {
+        color: green;
+    }
+    &.map-marker-end {
+        color: red;
+    }
+    &.map-marker-turn {
+        color: $link-hover-color;
+    }
+    &.map-marker-highlighted {
+        color: $link-hover-color;
+    }
+}
+
+.flex-spacer {
+    flex: 1;
+}

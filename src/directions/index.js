@@ -1,2 +1,2 @@
-import Directions from './Directions';
-export default Directions;
+export { default as Directions } from './Directions.svelte';
+export { getDirections } from './directions';

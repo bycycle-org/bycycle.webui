@@ -1,5 +1,3 @@
-import Map from './Map';
-
-export * from './const';
-export * from './styles';
-export default Map;
+export { default as Map } from './Map.svelte';
+export { default as MapService } from './map';
+export { displayLatLong } from './util';
