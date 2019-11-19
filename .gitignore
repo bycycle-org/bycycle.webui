@@ -4,5 +4,6 @@
 /public/*.map
 /.env*
 /package-lock.json
+/poetry.lock
 
 npm-debug.log*
