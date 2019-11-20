@@ -150,7 +150,7 @@
             map.clearOverlay(highlightOverlay);
         }
         highlightOverlay = map.addOverlay(
-            direction.point.coordinates, 'map-marker-turn', 'directions_bike', 'center-center');
+            direction.point.coordinates, 'map-marker-turn', 'center-center');
     }
 
     function handleDirectionHoverOut(direction) {
@@ -309,7 +309,7 @@
                            on:click|preventDefault="{() => handleDirectionClick(start)}"
                            on:mouseenter|preventDefault="{() => handleDirectionHover(start)}"
                            on:mouseleave|preventDefault="{() => handleDirectionHoverOut(start)}">
-                            <span class="material-icons" style="color: green;">play_arrow</span>
+                            <span class="material-icons map-marker map-marker-start"></span>
                             <span><b>Start</b><br>{start.name}</span>
                         </a>
                     </li>
@@ -348,7 +348,7 @@
                            on:click|preventDefault="{() => handleDirectionClick(end)}"
                            on:mouseenter|preventDefault="{() => handleDirectionHover(end)}"
                            on:mouseleave|preventDefault="{() => handleDirectionHoverOut(end)}">
-                            <span class="material-icons" style="color: red;">stop</span>
+                            <span class="material-icons map-marker map-marker-end"></span>
                             <span><b>End</b><br>{end.name}</span>
                         </a>
                     </li>

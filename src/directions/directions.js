@@ -88,13 +88,8 @@ export async function getDirections({ fromTerm, fromPoint, toTerm, toPoint, myLo
         results.slice(1).forEach(result => extendExtent(bounds, result.bounds));
     }
 
-    map.addOverlay(
-        result.start.point.coordinates,
-        'map-marker-start',
-        'play_arrow',
-        'center-center'
-    );
-    map.addOverlay(result.end.point.coordinates, 'map-marker-end', 'stop', 'center-center');
+    map.addOverlay(result.start.point.coordinates, 'map-marker-start with-background', 'center-center');
+    map.addOverlay(result.end.point.coordinates, 'map-marker-end with-background', 'center-center');
     map.vectorLayer.getSource().addFeature(line);
     map.vectorLayer.setVisible(true);
     map.fitExtent(bounds, true, { padding: [40, 40, 40, 440] });

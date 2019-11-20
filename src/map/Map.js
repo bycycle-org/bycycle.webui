@@ -364,19 +364,12 @@ export default class MapService {
 
     /* Overlays */
 
-    addOverlay(
-        position,
-        className = null,
-        iconName = 'place',
-        positioning = 'bottom-center',
-        element = null
-    ) {
+    addOverlay(position, className = null, positioning = 'bottom-center', element = null) {
         if (!element) {
             element = document.createElement('DIV');
-            element.appendChild(document.createTextNode(iconName));
             element.classList.add('material-icons', 'map-marker');
             if (className) {
-                element.classList.add(className);
+                element.classList.add(...className.split(' '));
             }
         }
         const overlay = new Overlay({ element, position, positioning, insertFirst: false });

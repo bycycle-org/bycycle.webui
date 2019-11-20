@@ -82,23 +82,37 @@ button.material-icons {
     color: #ff4136;
     font-size: 36px;
     text-shadow: 2px -1px 2px #303030;
-    &.map-marker-start,
-    &.map-marker-end {
-        background-color: rgba(255, 255, 255, 0.5);
-        border: 2px solid #303030;
-        border-radius: $border-radius;
+
+    &::before {
+        content: "place";
     }
+
     &.map-marker-start {
         color: green;
+        &::before {
+            content: "trip_origin";
+        }
     }
+
     &.map-marker-end {
         color: red;
+        &::before {
+            content: "clear";
+        }
     }
+
+    &.map-marker-start.with-background,
+    &.map-marker-end.with-background {
+        background-color: rgba(255, 255, 255, 0.75);
+        border: 2px solid white;
+        border-radius: $border-radius;
+    }
+
     &.map-marker-turn {
         color: $link-hover-color;
-    }
-    &.map-marker-highlighted {
-        color: $link-hover-color;
+        &::before {
+            content: 'directions_bike';
+        }
     }
 }
 
