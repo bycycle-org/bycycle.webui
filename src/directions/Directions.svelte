@@ -88,20 +88,23 @@
                 return 'arrow_upward';
             case 'back':
                 return 'arrow_downward';
-            case 'left':
-                return 'arrow_back';
             case 'right':
                 return 'arrow_forward';
+            case 'left':
+                return 'arrow_back';
+
             case 'north':
-            case 'east':
             case 'south':
+            case 'east':
             case 'west':
                 return turn.charAt(0).toUpperCase();
+
             case 'northeast':
+            case 'northwest':
             case 'southeast':
             case 'southwest':
-            case 'northwest':
                 return `${turn.charAt(0)}${turn.charAt(5)}`.toUpperCase();
+
             default:
                 return turn;
         }
@@ -216,14 +219,29 @@
         top: $standard-spacing + (3 * 40px);
     }
 
-    li.start {
-        background-color: rgba(0, 255, 0, 0.10);
-        color: green;
+    ul.results {
+        > li.direction > a {
+            display: flex;
+            align-items: center;
+            > :first-child {
+                margin-right: $half-standard-spacing;
+            }
+        }
+
+        > li.start {
+            background-color: rgba(0, 255, 0, 0.10);
+            color: green;
+        }
+
+        > li.end {
+            background-color: rgba(255, 0, 0, 0.10);
+            color: red;
+        }
     }
 
-    li.end {
-        background-color: rgba(255, 0, 0, 0.10);
-        color: red;
+    .cardinal-direction {
+        font-size: 24px;
+        padding: 0 4px;
     }
 
     .distance {
@@ -304,7 +322,7 @@
                         </span>
                     </li>
 
-                    <li class="start">
+                    <li class="direction start">
                         <a href="#show-point"
                            on:click|preventDefault="{() => handleDirectionClick(start)}"
                            on:mouseenter|preventDefault="{() => handleDirectionHover(start)}"
@@ -315,12 +333,13 @@
                     </li>
 
                     {#each directions as direction, i}
-                        <li>
+                        <li class="direction">
                             <a href="#show-point"
                                on:click|preventDefault="{() => handleDirectionClick(direction)}"
                                on:mouseenter|preventDefault="{() => handleDirectionHover(direction)}"
                                on:mouseleave|preventDefault="{() => handleDirectionHoverOut(direction)}">
                                 {#if i === 0}
+                                    <span class="cardinal-direction">{getIconForTurn(direction.turn)}</span>
                                     <span>
                                         Go {direction.turn} on {direction.name}
                                         {#if direction.toward}
@@ -343,7 +362,7 @@
                         </li>
                     {/each}
 
-                    <li class="end">
+                    <li class="direction end">
                         <a href="#show-point"
                            on:click|preventDefault="{() => handleDirectionClick(end)}"
                            on:mouseenter|preventDefault="{() => handleDirectionHover(end)}"
