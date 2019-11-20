@@ -10,14 +10,14 @@ import { render as renderSass } from 'sass';
 import autoprefixer from 'autoprefixer';
 import postcss from 'postcss';
 
-if (!process.env.NODE_ENV) {
-    process.env.NODE_ENV = 'dev';
-}
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 const ENV = process.env.NODE_ENV;
-const IS_DEV = ENV === 'dev';
+const IS_DEV = ENV === 'development';
 
-console.info(`Building for env: ${ENV}...`);
+const LIVE_RELOAD = !process.env.LIVE_RELOAD
+    ? IS_DEV
+    : ['true', '1'].includes(process.env.LIVE_RELOAD);
 
 export default {
     input: 'src/main.js',
@@ -76,7 +76,7 @@ export default {
         resolvePlugin(),
         commonjsPlugin(),
 
-        IS_DEV && livereloadPlugin('public'),
+        LIVE_RELOAD && livereloadPlugin('public'),
 
         !IS_DEV && terserPlugin()
     ]

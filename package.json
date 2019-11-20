@@ -23,13 +23,7 @@
     "svelte": "^3.14.1"
   },
   "scripts": {
-    "build": "NODE_ENV=prod npm-run-all sass:prod build:prod",
-    "build:dev": "rollup --config --watch",
-    "build:prod": "rollup --config",
-    "sass:dev": "sass --watch src/styles/global.scss public/global.css",
-    "sass:prod": "sass src/styles/global.scss public/global.css",
-    "serve:dev": "sirv public --dev",
-    "start": "npm-run-all -p sass:dev serve:dev build:dev"
+    "start": "runcommand dev-server"
   },
   "browsers": [
     "> 1%",
