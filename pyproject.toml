@@ -5,6 +5,7 @@ build-backend = "poetry.masonry.api"
 [tool.poetry]
 name = "bycycle.webui"
 version = "1.0a1"
+description = "byCycle Web UI"
 authors = ["Wyatt Baldwin <wyatt@bycycle.org>"]
 
 [tool.poetry.dependencies]
