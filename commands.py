@@ -1,11 +1,11 @@
 import os
 import shutil
 import time
-from threading import Thread
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 from runcommands import arg, command
-from runcommands.commands import local, remote, sync
-from runcommands.util import abort, printer
+from runcommands.commands import git_version, local, remote, sync
+from runcommands.util import abort, confirm, printer
 
 
 @command
@@ -14,27 +14,31 @@ def init():
 
 
 @command
-def install(upgrade=False, skip_poetry=False):
-    if not skip_poetry:
-        local('poetry update')
+def install(upgrade=False, skip_python=False):
+    if not skip_python:
+        local('.venv/bin/pip install --upgrade --upgrade-strategy eager pip setuptools')
+        if upgrade:
+            local('poetry update')
     if upgrade:
-        local('npm out')
+        local('npm out', raise_on_error=False)
         local('npm upgrade')
     else:
         local('npm install')
 
 
 @command
-def build(env, clean_=True):
+def build(env, clean_=True, verbose=False):
     printer.header(f'Building for environment: {env}')
-    clean_ and do_done('Cleaning...', clean, quiet=True)
-    do_done('Compiling SCSS to CSS...', sass)
-    do_done('Rolling up...', rollup, env, live_reload=False, quiet=True)
+    quiet = not verbose
+    end = None if verbose else ' '
+    clean_ and do_done(f'Cleaning...', clean, quiet=quiet, _end=end)
+    do_done(f'Compiling SCSS to CSS...', sass, quiet=quiet, _end=end)
+    do_done(f'Rolling up...', rollup, env, live_reload=False, quiet=quiet, _end=end)
 
 
 @command
 def rollup(env, live_reload: arg(type=bool) = None, watch=False, quiet=False):
-    environ = {'ENV': env}
+    environ = {'NODE_ENV': env}
     if live_reload is not None:
         environ['LIVE_RELOAD'] = str(int(live_reload))
     kwargs = {
@@ -49,42 +53,74 @@ def rollup(env, live_reload: arg(type=bool) = None, watch=False, quiet=False):
 
 
 @command
-def sass(watch=False):
-    local(('sass', '--watch' if watch else None, 'src/styles/global.scss', 'public/global.css'))
+def sass(sources: arg(container=tuple), watch=False, quiet=False):
+    args = []
+    destinations = []
+    for source in sources:
+        name = os.path.basename(source)
+        root, ext = os.path.splitext(name)
+        destination = os.path.join('public', f'{root}.css')
+        args.append(f'{source}:{destination}')
+        destinations.append(destination)
+    local(('sass', '--watch' if watch else None, *args))
+    if not quiet:
+        for source, destination in zip(sources, destinations):
+            print(f'Compiled {source} to {destination}')
 
 
 @command
-def dev_server():
+def dev_server(default_args, host='localhost', port=5000, directory='public'):
     printer.header('Running dev server')
 
     printer.info('Cleaning')
-    clean(True)
+    clean()
 
     printer.info('Running scss watcher in background')
-    sass_thread = Thread(target=sass, kwargs={'watch': True}, daemon=True)
-    sass_thread.start()
-    wait_for_file('public/global.css')
+    sass_args = ['sass', '--watch']
+    for source in default_args['sass']['sources']:
+        name = os.path.basename(source)
+        root, ext = os.path.splitext(name)
+        destination = os.path.join('public', f'{root}.css')
+        sass_args.append(f'{source}:{destination}')
+    local(sass_args, background=True, environ={
+        'NODE_ENV': 'development',
+    })
+    wait_for_file(destination)
 
     printer.info('Running rollup watcher in background')
-    rollup_thread = Thread(
-        target=rollup, args=('development',), kwargs={'watch': True}, daemon=True)
-    rollup_thread.start()
+    local(['rollup', '--config', '--watch'], background=True, environ={
+        'NODE_ENV': 'development',
+        'LIVE_RELOAD': 'true',
+    })
     wait_for_file('public/bundle.js')
 
-    printer.info('Running server')
-    local('sirv public --dev')
+    printer.info(f'Serving {directory} directory at http://{host}:{port}/')
+
+    class RequestHandler(SimpleHTTPRequestHandler):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=directory, **kwargs)
+
+        def translate_path(self, path):
+            path = super().translate_path(path)
+            if not os.path.exists(path):
+                path = os.path.join(self.directory, 'index.html')
+            return path
+
+    server = ThreadingHTTPServer((host, port), RequestHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        abort(message='Shut down dev server')
 
 
 @command
 def clean(quiet=False):
-    if not quiet:
-        printer.header('Cleaning up...')
-
     def rmfile(file):
         if os.path.isfile(file):
             os.remove(file)
             if not quiet:
-                printer.info(f'Removed file: {file}')
+                printer(f'Removed file: {file}')
         else:
             if not quiet:
                 printer.warning(f'Path does not exist or is not a file: {file}')
@@ -93,7 +129,7 @@ def clean(quiet=False):
         if os.path.isdir(path):
             shutil.rmtree(path)
             if not quiet:
-                printer.info(f'Removed directory: {path}')
+                printer(f'Removed directory: {path}')
         else:
             if not quiet:
                 printer.warning(f'Path does not exist or is not a directory: {path}')
@@ -112,19 +148,62 @@ def clean(quiet=False):
 
 
 @command
-def deploy(host, to='/sites/bycycle.org/current/frontend/', build_=True, clean_=True,
-           overwrite=False, dry_run=False):
-    printer.header(f'Deploying to {host}...')
+def deploy(env, host, version=None, build_=True, clean_=True, verbose=False, push=True,
+           overwrite=False, chown=True, chmod=True, link=True, dry_run=False):
+    if env == 'development':
+        abort(1, 'Can\'t deploy to development environment')
+    version = version or git_version()
+    root_dir = '/sites/bycycle.org/webui'
+    build_dir = f'{root_dir}/builds/{version}'
+    link_path = f'{root_dir}/current'
+    real_run = not dry_run
+
+    printer.hr(
+        f'{"[DRY RUN] " if dry_run else ""}Deploying version {version} to {env}',
+        color='header')
+    printer.header('Host:', host)
+    printer.header('Remote root directory:', root_dir)
+    printer.header('Remote build directory:', build_dir)
+    printer.header('Remote link to current build:', link_path)
+    printer.header('Steps:')
+    printer.header(f'  - {"Cleaning" if clean_ else "Not cleaning"}')
+    printer.header(f'  - {"Building" if build_ else "Not building"}')
+    printer.header(f'  - {f"Pushing" if push else "Not pushing"}')
+    printer.header(f'  - {f"Setting owner" if chown else "Not setting owner"}')
+    printer.header(f'  - {f"Setting permissions" if chmod else "Not setting permissions"}')
+    if overwrite:
+        printer.warning(f'  - Overwriting {build_dir}')
+    printer.header(f'  - {"Linking" if link else "Not linking"}')
+
+    confirm(f'Continue with deployment of version {version} to {env}?', abort_on_unconfirmed=True)
+
     if build_:
-        build(clean_=clean_)
-    printer.info(f'Pushing build/ to {to}...')
-    sync('public/', to, host, run_as='bycycle', delete=overwrite, dry_run=dry_run, echo=True)
-    printer.info(f'Setting ownership of {to}...')
-    remote(('chown -R bycycle:www-data', to), sudo=True)
+        build(env, clean_=clean_, verbose=verbose)
+
+    if push:
+        printer.info(f'Pushing public/ to {build_dir}...')
+        sync('public/', build_dir, host, delete=overwrite, dry_run=dry_run, echo=verbose)
+
+    if chown:
+        owner = 'bycycle:www-data'
+        printer.info(f'Setting ownership of {build_dir} to {owner}...')
+        if real_run:
+            remote(('chown', '-R', owner, build_dir), sudo=True)
+
+    if chmod:
+        mode = 'u=rwX,g=rwX,o='
+        printer.info(f'Setting permissions on {build_dir} to {mode}...')
+        if real_run:
+            remote(('chmod', '-R', mode, build_dir), sudo=True)
+
+    if link:
+        printer.info(f'Linking {link_path} to {build_dir}')
+        if real_run:
+            remote(('ln', '-sfn', build_dir, link_path))
 
 
-def do_done(message, cmd, *args, **kwargs):
-    printer.info(message, end=' ', flush=True)
+def do_done(message, cmd, *args, _end=' ', **kwargs):
+    printer.info(message, end=_end, flush=True)
     cmd(*args, **kwargs)
     printer.success('Done')
 

@@ -1,11 +1,12 @@
+<svelte:options immutable={true} />
+
 <script>
-    import { onMount } from 'svelte';
+    import { getContext, onMount } from 'svelte';
     import { Map, View } from 'ol';
     import LayerGroup from 'ol/layer/Group';
     import { DEFAULT_CENTER, OVERVIEW_SWITCHER_ZOOM } from './const';
 
-    export let mainMap;
-    export let mainBaseLayers = [];
+    const mainMap = getContext('map');
 
     let label;
     let activeIndex = 1; // Active on main map
@@ -21,10 +22,10 @@
         });
     }
 
-    const baseLayers = mainBaseLayers.map((layer, i) => {
+    const baseLayers = mainMap.baseLayers.map((layer, i) => {
         if (layer.getVisible()) {
             activeIndex = i;
-            nextIndex = (i + 1) % mainBaseLayers.length;
+            nextIndex = (i + 1) % mainMap.baseLayers.length;
         }
 
         if (layer instanceof LayerGroup) {
@@ -57,7 +58,7 @@
             view.animate({ center: mainMap.getCenter(), duration: 50 });
         });
 
-        mainBaseLayers.forEach(layer => {
+        mainMap.baseLayers.forEach(layer => {
             layer.on('change:visible', event => {
                 // XXX: Only trigger for currently-visible base layer
                 if (!event.target.getVisible()) {
@@ -71,7 +72,7 @@
                     layer.setVisible(false);
                     if (visible) {
                         activeIndex = i;
-                        nextIndex = (i + 1) % mainBaseLayers.length;
+                        nextIndex = (i + 1) % mainMap.baseLayers.length;
                     }
                 });
 
@@ -83,7 +84,7 @@
 
     function handleClick() {
         activeIndex = (activeIndex + 1) % baseLayers.length;
-        mainMap.setBaseLayer(mainBaseLayers[activeIndex]);
+        mainMap.setBaseLayer(mainMap.baseLayers[activeIndex]);
     }
 </script>
 
@@ -92,14 +93,13 @@
     @import './styles/variables';
 
     #overview-switcher-map {
-        position: relative;
-        width: $overview-switcher-width;
-        height: $overview-switcher-height;
-
         background-color: white;
         border-radius: 2px;
         box-shadow: 2px 2px 2px $link-color;
         cursor: pointer;
+        display: none;
+        width: $overview-switcher-width;
+        height: $overview-switcher-width;
 
         .label {
             position: absolute;
@@ -112,12 +112,23 @@
             color: black;
             background-color: rgba(255, 255, 255, 0.75);
             border-top: 1px solid white;
+            font-size: 14px;
             font-weight: bold;
             line-height: 1;
             text-align: center;
         }
 
-        @include hidden-sm;
+        @media (min-width: $md-width) {
+            display: block;
+        }
+
+        @media (min-width: $lg-width) {
+            width: $overview-switcher-width-lg;
+            height: $overview-switcher-width-lg;
+            .label {
+                font-size: 16px;
+            }
+        }
     }
 </style>
 

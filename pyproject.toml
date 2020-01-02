@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry>=0.12"]
+requires = ["poetry>=1.0b6"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry]
@@ -12,4 +12,4 @@ authors = ["Wyatt Baldwin <wyatt@bycycle.org>"]
 python = "^3.6"
 
 [tool.poetry.dev-dependencies]
-runcommands = "1.0a43"
+runcommands = "^1.0a47"

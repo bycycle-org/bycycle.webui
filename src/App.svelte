@@ -1,26 +1,23 @@
-<script>
-    import { onMount } from 'svelte';
-    import { fade, fly } from 'svelte/transition';
-    import Menu from './Menu.svelte';
-    import { Directions } from './directions';
-    import { Query } from './query';
-    import { Map, MapService } from './map';
-    import { DIRECTIONS, QUERY, currentFunction, progressCounter } from './stores';
-    import { contextMenuStore } from './map/stores';
+<svelte:options immutable={true} />
 
-    const map = new MapService();
-    let showLoading = true;
+<script>
+    import { onMount, setContext } from 'svelte';
+    import { fade, fly } from 'svelte/transition';
+    import { Map, MapService } from './map';
+    import { currentRoute, progressCounter } from './stores';
+    import Menu from './Menu.svelte';
 
     onMount(() => {
         setTimeout(() => {
-            showLoading = false;
             progressCounter.decrement();
         }, 1000);
+
+        document.body.addEventListener('touchmove', event => event.preventDefault(), {
+            passive: false
+        });
     });
 
-    function handleClick() {
-        $contextMenuStore = { open: false, x: 0, y: 0 };
-    }
+    setContext('map', new MapService());
 </script>
 
 <style type="text/scss">
@@ -36,14 +33,32 @@
         position: absolute;
         top: 50%;
         left: 50%;
-        z-index: 100;
+        width: 128px;
+        z-index: 3;
         background-color: rgba(255, 255, 255, 0.75);
         border: 1px solid white;
         border-radius: $border-radius;
+        color: seagreen;
+        text-align: center;
+        text-shadow: 1px 1px 1px;
         font-size: 24px;
         line-height: 1;
         padding: $standard-spacing;
         transform: translateX(-50%) translateY(-50%);
+    }
+
+    #loading-spinner {
+        position: absolute;
+        top: calc(50% - 75px);
+        left: calc(50% - 75px);
+        width: 150px;
+        height: 150px;
+        z-index: 3;
+        border: $standard-spacing solid rgba(255, 255, 255, 0.75);
+        border-top: $standard-spacing solid seagreen;;
+        border-bottom: $standard-spacing solid seagreen;;
+        border-radius: 50%;
+        animation: spinner 2s linear infinite;
     }
 
     #progress-bar {
@@ -51,18 +66,24 @@
         top: 0;
         left: 0;
         right: 0;
-        height: $half-standard-spacing;
-        z-index: 1;
-        animation: blinker 1.5s linear infinite;
+        height: $half-standard-spacing - 1px;
+        z-index: 3;
         background-color: seagreen;
+        box-shadow: 0px 1px 2px darken(seagreen, 10%);
+        animation: blinker 1.5s linear infinite;
+
+        @media (min-width: $sm-width) {
+            height: $half-standard-spacing;
+        }
     }
 
     header {
         position: absolute;
-        bottom: $standard-spacing;
-        left: (2 * $standard-spacing) + 128px;
+        bottom: $half-standard-spacing;
+        left: $half-standard-spacing;
+
         width: $header-width;
-        z-index: 100;
+        z-index: 1;
 
         > h1 {
             margin: 0;
@@ -71,38 +92,57 @@
             > a {
                 color: $header-color;
                 display: block;
-                font-size: 24px;
+                font-size: 18px;
                 font-weight: normal;
                 text-decoration: none;
                 text-shadow: 1px 1px 2px;
             }
         }
+
+        @media (min-width: $sm-width) {
+            bottom: $standard-spacing;
+            left: $standard-spacing;
+            > h1 > a {
+                font-size: 20px;
+            }
+        }
+
+        @media (min-width: $md-width) {
+            left: (2 * $standard-spacing) + $overview-switcher-width;
+            > h1 > a {
+                font-size: 24px;
+            }
+        }
+
+        @media (min-width: $lg-width) {
+            left: (2 * $standard-spacing) + $overview-switcher-width-lg;
+        }
     }
 
     :global(.function) {
-        position: absolute;
-        width: $panel-width;
-        z-index: 2;
-
         form,
         #results,
         #error {
             position: absolute;
-            left: $standard-spacing;
-            width: $panel-width - $twice-standard-spacing;
-            min-width: 200px - $twice-standard-spacing;
+            right: 0;
+            left: 0;
+            min-width: $sm-width / 2;
+            z-index: 2;
 
             margin: 0;
             padding: 0;
 
             background-color: white;
             box-shadow: 2px 2px 2px $link-color;
+
+            @media (min-width: $sm-width) {
+                right: auto;
+                left: $standard-spacing;
+                width: $panel-width - $twice-standard-spacing;
+            }
         }
 
         form {
-            top: $standard-spacing;
-            z-index: 1;
-
             button.material-icons[disabled] {
                 border: none;
             }
@@ -113,8 +153,7 @@
                 margin: 0;
                 padding: 0;
                 height: $button-width + $standard-spacing;
-                font-size: 16px;
-                line-height: 22px;
+                font-size: 14px;
                 min-width: 20px;
             }
 
@@ -124,11 +163,20 @@
                 line-height: 1;
                 margin: $half-standard-spacing 0;
             }
+
+            @media (min-width: $sm-width) {
+                top: $standard-spacing;
+
+                input {
+                    font-size: 16px;
+                    line-height: 22px;
+                }
+            }
         }
 
         #results,
         #error {
-            z-index: 2;
+            overflow-y: auto;
         }
 
         #results, .results {
@@ -179,82 +227,28 @@
             }
         }
 
-        @media (max-width: $xs-width) {
-            width: 100%;
-
-            form,
-            #results,
-            #error {
-                right: $half-standard-spacing;
-                left: $half-standard-spacing;
-                width: auto;
-            }
-
-            form {
-                top: $half-standard-spacing;
-
-                input {
-                    font-size: 14px;
-                }
-            }
-        }
-    }
-
-    @media (max-width: $sm-width) {
-        header {
-            bottom: $standard-spacing;
-            left: $standard-spacing;
-
-            > h1 {
-                > a {
-                    font-size: 18px;
-                }
-            }
-        }
-    }
-
-    @media (max-width: $xs-width) {
-        #progress-bar {
-            height: $half-standard-spacing - 1px;
-        }
-
-        header {
-            bottom: $half-standard-spacing;
-            left: $half-standard-spacing;
-
-            > h1 {
-                > a {
-                    font-size: 18px;
-                }
-            }
+        @media (min-width: $sm-width) {
+            width: $panel-width - $twice-standard-spacing;
         }
     }
 </style>
 
-<div id="container" on:click={handleClick}>
-    {#if showLoading}
-        <div id="loading" transition:fade>
-            <span>Loading...</span>
-        </div>
-    {/if}
-
+<div id="container">
     {#if $progressCounter}
         <div id="progress-bar" transition:fly={{ y: -5 }} />
+        <div id="loading-spinner" transition:fade></div>
+        <div id="loading" transition:fade><span>Loading</span></div>
     {/if}
 
-    <header title="Get there by Cycle!">
+    <header title="Get there by cycle!">
         <h1>
             <a href="/">byCycle</a>
         </h1>
     </header>
 
-    <Menu {map} />
+    <Menu />
 
-    <Map {map} />
+    <Map />
 
-    {#if $currentFunction === QUERY}
-        <Query {map} on:query="{() => console.log('event')}" />
-    {:else if $currentFunction === DIRECTIONS}
-        <Directions {map} />
-    {/if}
+    <svelte:component this={$currentRoute.component} />
 </div>

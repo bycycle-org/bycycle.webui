@@ -1,22 +1,16 @@
 import { extend as extendExtent } from 'ol/extent';
 import Feature from 'ol/Feature';
 import LineString from 'ol/geom/LineString';
+import { fetchWrapper } from '../fetch';
+import { breakpointSwitch } from '../util';
 import { ROUTE_STYLE } from '../map/styles';
 import { displayLatLong } from '../map/util';
-import { fetchWrapper } from '../util';
-import {
-    directionsFromTerm,
-    directionsFromPoint,
-    directionsToTerm,
-    directionsToPoint,
-    directionsResults,
-    directionsError,
-    setDirectionsState
-} from './stores';
 
-export async function getDirections({ fromTerm, fromPoint, toTerm, toPoint, myLocation }, map) {
+export async function getDirections(state, map, myLocation) {
+    let { fromTerm, fromPoint, toTerm, toPoint } = state;
+
     if (!(fromTerm.trim() && toTerm.trim())) {
-        return;
+        return {};
     }
 
     const fromMyLocation = fromTerm.toLowerCase() === 'my location';
@@ -25,26 +19,16 @@ export async function getDirections({ fromTerm, fromPoint, toTerm, toPoint, myLo
     if (fromMyLocation || toMyLocation) {
         const { position } = myLocation;
         if (position) {
-            const latLong = displayLatLong(position);
             if (fromMyLocation) {
-                fromTerm = latLong;
-                fromPoint = position;
-                directionsFromPoint.set(fromPoint);
+                fromTerm = displayLatLong(position, ',');
+                fromPoint = null;
             }
             if (toMyLocation) {
-                toTerm = latLong;
-                toPoint = position;
-                directionsToPoint.set(toPoint);
+                toTerm = displayLatLong(position, ',');
+                toPoint = null;
             }
         } else {
-            directionsError.set({
-                error: {
-                    title: 'Location Unavailable',
-                    explanation: 'Your location is currently unavailable',
-                    detail: 'You may need to enable location services in your browser'
-                }
-            });
-            return;
+            return { fromTerm, fromPoint, toTerm, toPoint, error: myLocation.error };
         }
     }
 
@@ -57,48 +41,89 @@ export async function getDirections({ fromTerm, fromPoint, toTerm, toPoint, myLo
     };
 
     if (fromPoint) {
-        params.from_point = displayLatLong(fromPoint, ',');
+        if (typeof fromPoint !== 'string') {
+            fromPoint = displayLatLong(fromPoint, ',');
+        }
+        params.from_point = fromPoint;
     }
 
     if (toPoint) {
-        params.to_point = displayLatLong(toPoint, ',');
+        if (typeof toPoint !== 'string') {
+            toPoint = displayLatLong(toPoint, ',');
+        }
+        params.to_point = toPoint;
     }
 
     const data = await fetchWrapper('/directions', params);
 
     if (data === null) {
+        // Request aborted
         return null;
     } else if (data.error && !data.results) {
-        setDirectionsState({ fromTerm, fromPoint, toTerm, toPoint, error: data.error });
-        return null;
+        return { fromTerm, fromPoint, toTerm, toPoint, error: data.error };
     }
 
-    const results = data.results;
-    const result = results[0];
-    const bounds = result.bounds;
+    await updateMap(map, data.results);
 
-    const line = new Feature({
-        geometry: new LineString(result.linestring.coordinates),
-        name: result.name
-    });
-
-    line.setStyle(ROUTE_STYLE);
-
-    if (results.length > 1) {
-        results.slice(1).forEach(result => extendExtent(bounds, result.bounds));
-    }
-
-    map.addOverlay(result.start.point.coordinates, 'map-marker-start with-background', 'center-center');
-    map.addOverlay(result.end.point.coordinates, 'map-marker-end with-background', 'center-center');
-    map.vectorLayer.getSource().addFeature(line);
-    map.vectorLayer.setVisible(true);
-    map.fitExtent(bounds, true, { padding: [40, 40, 40, 440] });
-
-    setDirectionsState({
+    return {
         fromTerm: data.start.name,
         fromPoint: data.start.point.coordinates,
         toTerm: data.end.name,
         toPoint: data.end.point.coordinates,
-        results
+        results: data.results
+    };
+}
+
+export async function updateMap (map, results) {
+    const start = results[0].start;
+    const end = results[results.length - 1].end;
+
+    const coordinates = results.reduce((accumulator, result) => {
+        return accumulator.concat(result.linestring.coordinates);
+    }, []);
+    const line = new Feature({
+        geometry: new LineString(coordinates)
+    });
+    line.setStyle(ROUTE_STYLE);
+
+    const bounds = results.reduce((accumulator, result) => {
+        return extendExtent(accumulator, result.bounds);
+    }, results[0].bounds);
+
+    map.addOverlay(start.point.coordinates, 'map-marker-start', 'center-center');
+    map.addOverlay(end.point.coordinates, 'map-marker-end', 'center-center');
+    map.vectorLayer.getSource().addFeature(line);
+    map.vectorLayer.setVisible(true);
+
+    await map.fitExtent(bounds, {
+        padding: breakpointSwitch(breakpoint => {
+            const buttonWidth = 40;
+            const formHeight = 120;
+            const halfMarkerWidth = 12;
+            const panelWidth = 400;
+            switch (breakpoint) {
+                case 'xs':
+                    return [
+                        formHeight + halfMarkerWidth + 8,
+                        buttonWidth + halfMarkerWidth + 8,
+                        halfMarkerWidth + 4,
+                        halfMarkerWidth + 4
+                    ];
+                case 'sm':
+                    return [
+                        formHeight + halfMarkerWidth + 16,
+                        buttonWidth + halfMarkerWidth + 16,
+                        halfMarkerWidth + 8,
+                        halfMarkerWidth + 8
+                    ];
+                default:
+                    return [
+                        formHeight + halfMarkerWidth + 16,
+                        buttonWidth + halfMarkerWidth + 16,
+                        halfMarkerWidth + 8,
+                        panelWidth + halfMarkerWidth + 16
+                    ];
+            }
+        })
     });
 }

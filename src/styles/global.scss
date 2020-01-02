@@ -4,6 +4,7 @@
 
 html {
     box-sizing: border-box;
+    background-color: lighten(lightskyblue, 10%);
     color: $text-color;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: $font-size;
@@ -48,6 +49,15 @@ a:hover {
     }
 }
 
+@keyframes spinner {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
 button.material-icons {
     display: inline-block;
 
@@ -83,39 +93,48 @@ button.material-icons {
     font-size: 36px;
     text-shadow: 2px -1px 2px #303030;
 
-    &::before {
-        content: "place";
+    &.map-marker-place {
+        color: red;
+        &::before {
+            content: "place";
+        }
+    }
+
+    &.map-marker-start,
+    &.map-marker-end {
+        border: 2px solid white;
+        box-shadow: 2px 2px 2px #404040;
+        width: 24px;
+        height: 24px;
     }
 
     &.map-marker-start {
-        color: green;
-        &::before {
-            content: "trip_origin";
-        }
+        background-color: green;
+        border-radius: 50%;
     }
 
     &.map-marker-end {
-        color: red;
-        &::before {
-            content: "clear";
-        }
-    }
-
-    &.map-marker-start.with-background,
-    &.map-marker-end.with-background {
-        background-color: rgba(255, 255, 255, 0.75);
-        border: 2px solid white;
-        border-radius: $border-radius;
+        background-color: red;
     }
 
     &.map-marker-turn {
         color: $link-hover-color;
         &::before {
-            content: 'directions_bike';
+            content: "directions_bike";
         }
     }
 }
 
 .flex-spacer {
     flex: 1;
+}
+
+.hidden-xs {
+    @include hidden-xs();
+}
+.hidden-sm {
+    @include hidden-sm();
+}
+.hidden-md {
+    @include hidden-md();
 }

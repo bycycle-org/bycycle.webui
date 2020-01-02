@@ -1,26 +1,25 @@
 import Geolocation from 'ol/Geolocation';
 import { unByKey } from 'ol/Observable';
-import { readable, writable } from 'svelte/store';
+import { readable } from 'svelte/store';
 import { NATIVE_PROJECTION } from './const';
 
-export const contextMenuStore = writable({ open: false, x: 0, y: 0 });
-
-export const locationStore = readable(
+export const currentLocation = readable(
     {
         position: null,
         accuracy: Infinity,
         accuracyGeometry: null,
         heading: null,
         speed: 0,
-        errorMessage: null
+        error: null
     },
     set => {
+        const timeoutSeconds = 10;
         const geolocation = new Geolocation({
             projection: NATIVE_PROJECTION,
             trackingOptions: {
                 maximumAge: 2 * 1000,
                 enableHighAccuracy: true,
-                timeout: 30 * 1000
+                timeout: timeoutSeconds * 1000
             }
         });
 
@@ -31,30 +30,38 @@ export const locationStore = readable(
                 accuracyGeometry: geolocation.getAccuracyGeometry(),
                 heading: geolocation.getHeading() || 0,
                 speed: geolocation.getSpeed() || 0,
-                errorMessage: null
+                error: null
             });
         });
 
         const errorKey = geolocation.on('error', error => {
-            let errorMessage;
+            let detail;
+
             switch (error.code) {
                 case 1:
-                    errorMessage = 'Access to location services have been blocked for this site.';
+                    detail =
+                        'You may need to enable location services for this site in your browser.';
                     break;
                 case 3:
-                    errorMessage = 'Could not find location after 30 seconds.';
+                    detail = `Could not find location after ${timeoutSeconds} seconds.`;
+                    geolocation.setTracking(true);
                     break;
                 default:
-                    errorMessage = 'Could not determine location.';
+                    detail = 'Could not determine location.';
             }
-            return {
+
+            set({
                 position: null,
                 accuracy: Infinity,
                 accuracyGeometry: null,
                 heading: null,
                 speed: 0,
-                errorMessage
-            };
+                error: {
+                    title: 'Location Unavailable',
+                    explanation: 'Your location is currently unavailable',
+                    detail
+                }
+            });
         });
 
         geolocation.setTracking(true);

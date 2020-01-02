@@ -1,13 +1,14 @@
-import { boundingExtent, buffer as bufferExtent } from 'ol/extent';
+import { fetchWrapper } from '../fetch';
 import { displayLatLong } from '../map/util';
-import { fetchWrapper } from '../util';
-import { queryPoint, queryResults, queryError } from './stores';
 
-export async function submitQuery({ term, point, myLocation }, map, suppressErrors = false) {
+export async function submitQuery(state, map, myLocation, suppressErrors = false) {
+    const { term } = state;
+    let { point } = state;
+
     map.clearOverlays();
 
     if (!term.trim()) {
-        return;
+        return {};
     }
 
     if (term.trim().toLowerCase() === 'my location') {
@@ -16,49 +17,29 @@ export async function submitQuery({ term, point, myLocation }, map, suppressErro
             const latLong = displayLatLong(position);
             const result = { name: latLong, coordinates: position };
             map.setCenter(position);
-            queryResults.set([result]);
+            return { term: 'My Location', point: position, results: [result] };
         } else {
-            queryPoint.set(null);
-            queryError.set({
-                title: 'Location Unavailable',
-                explanation: 'Your location is currently unavailable',
-                detail: 'You may need to enable location services in your browser'
-            });
-            queryResults.set([]);
+            return { term, error: myLocation.error };
         }
-        return;
     }
 
     const params = { term };
 
     if (point) {
-        params.point = displayLatLong(point, ',');
+        if (typeof point !== 'string') {
+            point = displayLatLong(point, ',');
+        }
+        params.point = point;
     }
 
     const data = await fetchWrapper('/query', params, suppressErrors);
 
     if (data === null) {
+        // Request aborted
         return null;
     } else if (data.error && !data.results) {
-        queryPoint.set(null);
-        queryError.set(data.error);
-        queryResults.set([]);
-        return null;
+        return { term, error: data.error };
     }
 
-    const results = data.results;
-
-    if (results.length === 1) {
-        map.setCenter(results[0].coordinates, undefined, true);
-        map.zoomToStreetLevel();
-    } else {
-        const coordinates = results.map(result => result.coordinates);
-        const bounds = boundingExtent(coordinates);
-        const extent = bufferExtent(bounds, 100);
-        map.fitExtent(extent, true);
-    }
-
-    queryPoint.set(null);
-    queryError.set(null);
-    queryResults.set(results);
+    return { term, results: data.results };
 }

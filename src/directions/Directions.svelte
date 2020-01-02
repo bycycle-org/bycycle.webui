@@ -1,85 +1,173 @@
+<svelte:options immutable={true} />
+
 <script>
     import { fromEvent } from 'rxjs';
-    import { debounceTime, distinctUntilChanged, tap } from 'rxjs/operators';
-    import { onDestroy, onMount } from 'svelte';
+    import {
+        debounceTime,
+        distinctUntilChanged,
+        map as mapOperator,
+        skipWhile,
+        tap
+    } from 'rxjs/operators';
+    import { getContext, onDestroy, onMount, tick } from 'svelte';
     import { fly } from 'svelte/transition';
     import { INPUT_DEBOUNCE_TIME } from '../const';
-    import { locationStore } from '../map/stores';
-    import { switchToQuery } from '../stores';
-    import { toFixed } from '../util';
-    import { getDirections } from './directions';
-    import {
-        directionsFromTerm,
-        directionsFromPoint,
-        directionsToTerm,
-        directionsToPoint,
-        directionsResults,
-        directionsError,
-        setDirectionsState
-    } from './stores';
+    import { replaceState, setCurrentRoute } from '../routes';
+    import { abortRequest, currentLocation, currentUrl } from '../stores';
+    import { waitForLocation } from '../map/util';
+    import { breakpointSwitch, toFixed } from '../util';
+    import { getDirections, updateMap } from './directions';
 
-    export let map;
+    const map = getContext('map');
 
     let fromInputElement;
     let toInputElement;
-    let subscription;
+    let inputSubscription;
     let highlightOverlay;
 
+    let state;
+    setState();
+
     onMount(() => {
-        if (!$directionsFromTerm || $directionsToTerm) {
+        if (!state.fromTerm || state.toTerm) {
             fromInputElement.focus();
         } else {
             toInputElement.focus();
         }
 
-        subscription = fromEvent([fromInputElement, toInputElement], 'input')
+        inputSubscription = fromEvent([fromInputElement, toInputElement], 'input')
             .pipe(
                 tap(event => {
-                    if (event.target === fromInputElement) {
-                        directionsFromPoint.set(null);
-                    } else if (event.target === toInputElement) {
-                        directionsToPoint.set(null);
+                    const target = event.target;
+                    const value = target.value;
+                    const newState = { ...state };
+                    abortRequest();
+                    if (target === fromInputElement) {
+                        newState.fromTerm = value;
+                        newState.fromPoint = null;
+                    } else if (target === toInputElement) {
+                        newState.toTerm = value;
+                        newState.toPoint = null;
                     }
-                    directionsResults.set([]);
-                    directionsError.set(null);
-                    map.clearOverlays();
-                    map.vectorLayer.getSource().clear();
+                    clearMap();
+                    setState(newState);
                 }),
+                mapOperator(event => event.target.value),
+                skipWhile(value => !value.trim()),
                 debounceTime(INPUT_DEBOUNCE_TIME),
                 distinctUntilChanged()
             )
-            .subscribe(event => {});
+            .subscribe(value => {});
 
-        if ($directionsFromTerm && $directionsToTerm) {
-            handleSubmit();
-        }
+        currentUrl.subscribe('directions', ({ params }) => {
+            if (history.state && history.state.state) {
+                const historyState = history.state.state;
+                clearMap();
+                updateMap(map, historyState.results);
+                setState(historyState);
+            } else {
+                if (params.fromTerm || params.toTerm) {
+                    if (params.fromTerm === '?') {
+                        if (state.fromTerm) {
+                            params.fromTerm = state.fromTerm;
+                            params.fromPoint = state.fromPoint;
+                        } else {
+                            params.fromTerm = 'My Location';
+                            params.fromPoint = null;
+                        }
+                    }
+
+                    if (params.toTerm === '?') {
+                        if (state.toTerm) {
+                            params.toTerm = state.toTerm;
+                            params.toPoint = state.toPoint;
+                        } else {
+                            params.toTerm = 'My Location';
+                            params.toPoint = null;
+                        }
+                    }
+                    replaceState('directions', params);
+                }
+
+                setState(params);
+                tick();
+
+                if (state.fromTerm && state.toTerm) {
+                    const fromMyLocation = state.fromTerm.toLowerCase() === 'my location';
+                    const toMyLocation = state.toTerm.toLowerCase() === 'my location';
+                    if (fromMyLocation || toMyLocation) {
+                        waitForLocation(handleSubmit, true, false, true);
+                    } else {
+                        handleSubmit(false, true);
+                    }
+                } else {
+                    clearMap();
+                }
+            }
+        })
     });
 
     onDestroy(() => {
-        subscription.unsubscribe();
-        map.clearOverlays();
-        map.vectorLayer.getSource().clear(true);
+        abortRequest();
+        inputSubscription.unsubscribe();
+        clearMap();
+        setState();
     });
 
-    function handleSubmit() {
-        const args = {
-            fromTerm: $directionsFromTerm,
-            fromPoint: $directionsFromPoint,
-            toTerm: $directionsToTerm,
-            toPoint: $directionsToPoint,
-            myLocation: $locationStore
+    function setState(newState = {}) {
+        let showResults = false;
+        if (typeof newState.showResults === 'undefined' && newState.results) {
+            showResults = newState.results.length && breakpointSwitch(breakpoint => {
+                switch (breakpoint) {
+                    case 'xs':
+                    case 'sm':
+                        return false;
+                    default:
+                        return true;
+                }
+            });
+        }
+        state = {
+            fromTerm: '',
+            fromPoint: null,
+            toTerm: '',
+            toPoint: null,
+            results: [],
+            showResults,
+            error: null,
+            ...newState
         };
-        getDirections(args, map);
+    }
+
+    function setShowResults (showResults) {
+        setState({ ...state, showResults});
+    }
+
+    async function handleSubmit(blur = false) {
+        const newState = await getDirections(state, map, $currentLocation);
+        if (newState) {
+            setState(newState);
+            // tick();
+            replaceState('directions', newState, { state: newState });
+        }
+        if (blur) {
+            fromInputElement.blur();
+            toInputElement.blur();
+        }
     }
 
     function swapFromAndTo () {
-        setDirectionsState({
-            fromTerm: $directionsToTerm,
-            fromPoint: $directionsToPoint,
-            toTerm: $directionsFromTerm,
-            toPoint: $directionsFromPoint
+        setCurrentRoute('directions', {
+            fromTerm: state.toTerm,
+            fromPoint: state.toPoint,
+            toTerm: state.fromTerm,
+            toPoint: state.fromPoint
         });
-        handleSubmit();
+    }
+
+    function clearMap() {
+        map.clearOverlays();
+        map.vectorLayer.getSource().clear(true);
     }
 
     function getIconForTurn (turn) {
@@ -138,9 +226,8 @@
     }
 
     function handleReset() {
-        setDirectionsState();
-        map.clearOverlays();
-        switchToQuery();
+        clearMap();
+        setCurrentRoute('home');
     }
 
     function handleDirectionClick(direction) {
@@ -216,7 +303,13 @@
     }
 
     #results, #error {
-        top: $standard-spacing + (3 * 40px);
+        $form-height: 40px * 3;
+        top: $form-height;
+        max-height: calc(100% - (3 * 40px));
+        @media (min-width: $sm-width) {
+            top: $standard-spacing + $form-height;
+            max-height: calc(100% - 16px - (3 * 40px));
+        }
     }
 
     ul.results {
@@ -265,12 +358,12 @@
 
 
 <div class="function">
-    <form on:submit|preventDefault="{handleSubmit}">
+    <form on:submit|preventDefault="{() => handleSubmit(true)}">
         <div class="buttons">
             <button type="submit"
                     title="Get directions"
                     class="material-icons"
-                    disabled="{!($directionsFromTerm && $directionsToTerm)}"
+                    disabled="{!(state.fromTerm && state.toTerm)}"
                     >search</button>
 
             <button type="reset"
@@ -283,21 +376,27 @@
         <div>
             <div class="fields">
                 <div>
-                    <input type="text"
+                    <input type="search"
                            title="From"
                            placeholder="From (type or select point on map)"
+                           autocapitalize="off"
+                           autocomplete="off"
+                           autocorrect="off"
                            spellcheck="false"
                            bind:this="{fromInputElement}"
-                           bind:value="{$directionsFromTerm}" />
+                           bind:value="{state.fromTerm}" />
                 </div>
 
                 <div>
-                    <input type="text"
+                    <input type="search"
                            title="To"
                            placeholder="To (type or select point on map)"
+                           autocapitalize="off"
+                           autocomplete="off"
+                           autocorrect="off"
                            spellcheck="false"
                            bind:this="{toInputElement}"
-                           bind:value="{$directionsToTerm}" />
+                           bind:value="{state.toTerm}" />
                 </div>
             </div>
 
@@ -305,16 +404,16 @@
                 <button type="button"
                         title="Swap from and to"
                         class="material-icons"
-                        disabled="{!($directionsFromTerm || $directionsToTerm)}"
+                        disabled="{!(state.fromTerm || state.toTerm)}"
                         on:click={swapFromAndTo}
                         >swap_calls</button>
             </div>
         </div>
     </form>
 
-    {#if $directionsResults.length}
-        <div id="results" transition:fly={{ y: 0 }}>
-            {#each $directionsResults as { start, end, distance, directions }}
+    {#if state.showResults}
+        <div id="results" on:touchmove|stopPropagation in:fly={{ y: 0 }}>
+            {#each state.results as { start, end, distance, directions }}
                 <ul class="results">
                     <li>
                         <span>
@@ -389,13 +488,13 @@
                 </p>
             </div>
         </div>
-    {:else if $directionsError}
-        <div id="error" transition:fly="{{ y: 0 }}">
-            <div class="error-title">{$directionsError.title}</div>
+    {:else if state.error}
+        <div id="error" in:fly="{{ y: 0 }}">
+            <div class="error-title">{state.error.title}</div>
             <div class="error-message">
-                <p>{$directionsError.explanation}</p>
-                {#if $directionsError.detail}
-                    <p>{$directionsError.detail}</p>
+                <p>{state.error.explanation}</p>
+                {#if state.error.detail}
+                    <p>{state.error.detail}</p>
                 {/if}
             </div>
         </div>

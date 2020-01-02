@@ -101,6 +101,8 @@ export default class MapService {
             })
         });
 
+        this.boundaryLayer = this.makeBoundaryLayer();
+
         this.vectorLayer = new VectorLayer({
             visible: false,
             source: new VectorSource({
@@ -117,11 +119,7 @@ export default class MapService {
 
         this.map = new Map({
             controls: [],
-            layers: baseLayers.concat([
-                this.myLocationLayer,
-                this.vectorLayer,
-                this.makeBoundaryLayer()
-            ]),
+            layers: baseLayers.concat([this.myLocationLayer, this.boundaryLayer, this.vectorLayer]),
             view: this.view
         });
 
@@ -148,7 +146,7 @@ export default class MapService {
                         for (let prop of props) {
                             data.push(`${prop}: ${feature.get(prop)}`);
                         }
-                        console.log(data.join('\n'));
+                        console.debug(data.join('\n'));
                     },
                     {
                         layerFilter: layer => {
@@ -178,6 +176,10 @@ export default class MapService {
 
     on(...args) {
         return this.map.on(...args);
+    }
+
+    once(...args) {
+        return this.map.once(...args);
     }
 
     /* Layers */
@@ -227,19 +229,23 @@ export default class MapService {
         return this.view.getCenter();
     }
 
-    setCenter(center, zoom, onlyIfNotVisible = false, duration = ANIMATION_DURATION) {
-        if (onlyIfNotVisible && this.isVisible(center)) {
-            return;
+    setCenter(center, zoom, options = {}) {
+        options.center = center;
+        if (typeof zoom !== 'undefined') {
+            options.zoom = zoom;
         }
-        if (typeof zoom === 'undefined') {
-            this.view.animate({ center, duration });
-        } else {
-            this.view.animate({ center, zoom, duration });
+        if (typeof options.duration === 'undefined') {
+            options.duration = ANIMATION_DURATION;
         }
+        return new Promise((resolve, reject) => {
+            this.view.animate(options, completed => {
+                completed ? resolve() : reject();
+            });
+        });
     }
 
     setDefaultCenter() {
-        this.setCenter(DEFAULT_CENTER, DEFAULT_ZOOM);
+        return this.setCenter(DEFAULT_CENTER, DEFAULT_ZOOM);
     }
 
     getCoordinateFromPixel(pixel, native = true) {
@@ -256,11 +262,16 @@ export default class MapService {
         return this.view.calculateExtent();
     }
 
-    fitExtent(extent, onlyIfNotVisible = false, options = {}, duration = ANIMATION_DURATION) {
-        if (onlyIfNotVisible && this.isVisible(extent)) {
-            return;
+    fitExtent(extent, options = {}) {
+        if (typeof options.duration === 'undefined') {
+            options.duration = ANIMATION_DURATION;
         }
-        this.view.fit(extent, { duration, ...options });
+        return new Promise((resolve, reject) => {
+            options.callback = completed => {
+                completed ? resolve() : reject();
+            };
+            this.view.fit(extent, options);
+        });
     }
 
     isVisible(coordinatesOrExtent) {
@@ -280,31 +291,44 @@ export default class MapService {
         return this.view.getZoom();
     }
 
-    setZoom(zoom, duration = ANIMATION_DURATION) {
-        if (duration > 0) {
-            this.view.animate({ zoom, duration });
-        } else {
-            this.view.setZoom(zoom);
+    setZoom(zoom, options = {}) {
+        options.zoom = zoom;
+        if (typeof options.duration === 'undefined') {
+            options.duration = ANIMATION_DURATION;
         }
+        return new Promise((resolve, reject) => {
+            this.view.animate(options, completed => {
+                completed ? resolve() : reject();
+            });
+        });
     }
 
     zoomIn() {
-        this.setZoom(this.getZoom() + 1);
+        return this.setZoom(this.getZoom() + 1);
     }
 
     zoomOut() {
-        this.setZoom(this.getZoom() - 1);
+        return this.setZoom(this.getZoom() - 1);
     }
 
     zoomToStreetLevel() {
-        this.setZoom(Math.max(STREET_LEVEL_ZOOM, this.getZoom()));
+        return this.setZoom(Math.max(STREET_LEVEL_ZOOM, this.getZoom()));
+    }
+
+    zoomToFullExtent() {
+        const features = this.boundaryLayer.getSource().getFeatures();
+        if (features.length) {
+            const extent = features[0].getGeometry().getExtent();
+            return this.fitExtent(extent, { padding: [6, 7, 6, 7] });
+        }
+        return this.setDefaultCenter();
     }
 
     /* Location */
 
     showMyLocation(locationData) {
         const source = this.myLocationLayer.getSource();
-        const { position, accuracy, accuracyGeometry, errorMessage } = locationData;
+        const { position, accuracy, accuracyGeometry } = locationData;
         source.clear();
         if (position) {
             const feature = new Feature({
@@ -324,10 +348,6 @@ export default class MapService {
             this.myLocationLayer.setVisible(true);
         } else {
             this.myLocationLayer.setVisible(false);
-        }
-
-        if (errorMessage) {
-            console.error(errorMessage);
         }
     }
 

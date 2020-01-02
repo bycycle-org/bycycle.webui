@@ -1,7 +1,9 @@
 <script>
+    import { getContext, onMount } from 'svelte';
     import { fade, fly } from 'svelte/transition';
 
-    export let map;
+    const map = getContext('map');
+
     let show = false;
     let height = 'auto';
 
@@ -36,15 +38,19 @@
     #container {
         position: absolute;
         width: 100%;
-        height: 100%;
         z-index: 101;
     }
 
     #open-button {
         position: absolute;
-        top: $standard-spacing + $half-standard-spacing;
-        left: $standard-spacing + $half-standard-spacing;
+        top: $half-standard-spacing;
+        left: $half-standard-spacing;
         z-index: 1;
+
+        @media (min-width: $sm-width) {
+            top: $standard-spacing + $half-standard-spacing;
+            left: $standard-spacing + $half-standard-spacing;
+        }
     }
 
     #mask {
@@ -66,6 +72,7 @@
         padding: 0;
         background-color: white;
         list-style: none;
+        overflow-y: auto;
 
         > li {
             &:hover {
@@ -131,21 +138,14 @@
                 line-height: $line-height;
             }
         }
-    }
 
-    @media (max-width: $xs-width) {
-        ul#menu {
-            width: 100%;
-        }
-
-        #open-button {
-            top: $standard-spacing;
-            left: $standard-spacing;
+        @media (min-width: $sm-width) {
+            width: $menu-width;
         }
     }
 </style>
 
-<div id="container" style="height: {height}">
+<div id="container" on:touchmove|stopPropagation style="height: {height}">
     <button id="open-button"
             type="button"
             title="Open menu"
@@ -194,7 +194,8 @@
 
             <li class="divider" />
 
-            <li>
+            <!-- TODO: -->
+            <li style="display: none;">
                 <a href="#show-bike-map">
                     <span class="material-icons">directions_bike</span>
                     <span>Bike Map</span>

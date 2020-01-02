@@ -1,12 +1,7 @@
 import { writable } from 'svelte/store';
-import { setDirectionsState } from './directions/stores';
-import { setQueryState } from './query/stores';
-
-export const QUERY = 'QUERY';
-export const DIRECTIONS = 'DIRECTIONS';
+export * from './map/stores';
 
 export const abortStore = writable(null);
-export const currentFunction = writable(QUERY);
 
 export const abortRequest = () => {
     const controller = new AbortController();
@@ -19,7 +14,6 @@ export const abortRequest = () => {
     return controller;
 };
 
-// Progress counter
 export const progressCounter = (() => {
     const { subscribe, set, update } = writable(1);
     return {
@@ -30,16 +24,18 @@ export const progressCounter = (() => {
     };
 })();
 
-export const switchToDirections = state => {
-    if (state) {
-        setDirectionsState(state);
-    }
-    currentFunction.set(DIRECTIONS);
-};
+// URL Routing
+export const currentRoute = writable({});
 
-export const switchToQuery = state => {
-    if (state) {
-        setQueryState(state);
+export const currentUrl = (() => {
+    const store = writable({ routeName: 'home', path: '/', params: {}, queryParams: {} });
+    return {
+        set: store.set,
+        update: store.update,
+        subscribe: (routeName, run) => {
+            return store.subscribe(data => {
+                return data.routeName === routeName ? run(data) : undefined;
+            });
+        }
     }
-    currentFunction.set(QUERY);
-};
+})();

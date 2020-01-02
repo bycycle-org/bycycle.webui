@@ -1,6 +1,7 @@
-$xs-width: 480px;
-$sm-width: 600px;
-$md-width: 840px;
+$sm-width: 576px;
+$md-width: 768px;
+$lg-width: 992px;
+$xl-width: 1200px;
 
 $font-size: 16px;
 $line-height: 1.2;
@@ -37,5 +38,5 @@ $menu-item-color: $text-color;
 $button-width: 32px;
 
 // Map
-$overview-switcher-width: 128px;
-$overview-switcher-height: 128px;
+$overview-switcher-width: 96px;
+$overview-switcher-width-lg: 128px;

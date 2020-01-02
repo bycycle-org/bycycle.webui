@@ -1,63 +1,109 @@
 <script>
-    import { onMount } from 'svelte';
-    import { MY_LOCATION_ACCURACY_THRESHOLD, STREET_LEVEL_ZOOM } from './const';
-    import { contextMenuStore, locationStore } from './stores';
+    import Hammer from 'hammerjs';
+    import { getContext, onMount, tick } from 'svelte';
+    import { currentLocation } from '../stores';
+    import { DEFAULT_CENTER, STREET_LEVEL_ZOOM } from './const';
     import ContextMenu from './ContextMenu.svelte';
     import OverviewSwitcher from './OverviewSwitcher.svelte';
 
-    export let map;
-    let showContextMenu = false;
+    const map = getContext('map');
+
+    let mapElement;
+    let contextMenuOpen = false;
+    let contextMenuPixel = [0, 0];
+    let contextMenuClosedViaPointerDown = false;
 
     onMount(() => {
-        map.setTarget('map');
-        map.setDefaultCenter();
+        map.setTarget(mapElement);
+        map.setDefaultCenter().then(() => {
+            currentLocation.subscribe(locationData => {
+                map.showMyLocation(locationData);
+            });
 
-        const checkInterval = 1000;
-        let numChecks = 5;
-        let doLocationStoreUnsubscribe = false;
+            const startTime = new Date().getTime();
+            const unsubscribe = currentLocation.subscribe(async locationData => {
+                // During the first 5 seconds after the map has loaded,
+                // center/zoom in on the user's current location.
+                const now = new Date().getTime();
+                const [defaultX, defaultY] = DEFAULT_CENTER;
+                const [x, y] = map.getCenter();
+                const moved = defaultX !== x || defaultY !== y;
 
-        const locationStoreUnsubscribe = locationStore.subscribe(locationData => {
-            if (locationData.position) {
-                map.setCenter(locationData.position, STREET_LEVEL_ZOOM);
-                if (locationData.accuracy < MY_LOCATION_ACCURACY_THRESHOLD) {
-                    doLocationStoreUnsubscribe = true;
+                if (moved || (now - startTime) > 5000) {
+                    await tick();
+                    unsubscribe();
+                } else if (locationData.position) {
+                    map.setCenter(locationData.position, STREET_LEVEL_ZOOM);
                 }
-            }
+            });
         });
 
-        const checkLocationStoreUnsubscribe = () => {
-            if (doLocationStoreUnsubscribe || !numChecks) {
-                locationStoreUnsubscribe();
-            } else {
-                setTimeout(checkLocationStoreUnsubscribe, checkInterval);
+        // Open map context menu on long press.
+        new Hammer.Manager(mapElement, {
+            recognizers: [
+                [Hammer.Press, { time: 500 }]
+            ]
+        }).on('press', event => {
+            handleContextMenu(event);
+        });
+
+        // Close map context menu immediately on pointer down. I.e.,
+        // don't wait for a full click.
+        document.body.addEventListener('pointerdown', event => {
+            if (event.target.classList.contains('map-context-menu-item')) {
+                event.stopPropagation();
+                return false;
             }
-            numChecks -= 1;
-        };
+            if (contextMenuOpen) {
+                closeContextMenu();
+                contextMenuClosedViaPointerDown = true;
+            }
+        }, true);
 
-        checkLocationStoreUnsubscribe();
-    });
-
-    locationStore.subscribe(locationData => {
-        map.showMyLocation(locationData);
+        // Stop click after closing map context menu. This keeps buttons
+        // from being activated when closing the context menu.
+        document.body.addEventListener('click', event => {
+            if (contextMenuClosedViaPointerDown) {
+                event.preventDefault();
+                event.stopPropagation();
+                contextMenuClosedViaPointerDown = false;
+            }
+        }, true);
     });
 
     function handleContextMenu(event) {
-        contextMenuStore.set({
-            open: true,
-            x: event.pageX,
-            y: event.pageY
-        });
+        let x, y;
+        switch (event.type) {
+            case 'press':
+                [x, y] = [event.center.x, event.center.y];
+                break;
+            case 'contextmenu':
+                [x, y] = [event.pageX, event.pageY]
+                break;
+            default:
+                throw new Error(`Unhandled context menu event: ${event.type}`)
+        }
+        openContextMenu(x, y);
+    }
+
+    function openContextMenu(x, y) {
+        contextMenuOpen = true;
+        contextMenuPixel = [x, y];
+    }
+
+    function closeContextMenu() {
+        contextMenuOpen = false;
     }
 
     /* Controls */
 
     function handleMyLocation() {
-        map.setCenter($locationStore.position);
+        map.setCenter($currentLocation.position);
         map.zoomToStreetLevel();
     }
 
     function handleZoomToFullExtent() {
-        map.setDefaultCenter();
+        map.zoomToFullExtent();
     }
 
     function handleZoomIn() {
@@ -78,7 +124,6 @@
         right: 0;
         bottom: 0;
         left: 0;
-        background-color: lighten(lightskyblue, 10%);
     }
 
     #map > .controls > * {
@@ -118,47 +163,53 @@
     }
 
     #map > :global(.controls.top) {
-        top: $standard-spacing;
+        top: $half-standard-spacing;
     }
     #map > :global(.controls.right) {
-        right: $standard-spacing;
+        right: $half-standard-spacing;
     }
     #map > :global(.controls.bottom) {
-        bottom: $standard-spacing;
+        bottom: $half-standard-spacing;
     }
     #map > :global(.controls.left) {
-        left: $standard-spacing;
+        left: $half-standard-spacing;
     }
 
-    @media (max-width: $xs-width) {
+    @media (min-width: $sm-width) {
         #map > :global(.controls.top) {
-            top: $half-standard-spacing;
+            top: $standard-spacing;
         }
         #map > :global(.controls.right) {
-            right: $half-standard-spacing;
+            right: $standard-spacing;
         }
         #map > :global(.controls.bottom) {
-            bottom: $half-standard-spacing;
+            bottom: $standard-spacing;
         }
         #map > :global(.controls.left) {
-            left: $half-standard-spacing;
+            left: $standard-spacing;
         }
     }
 </style>
 
-<div id="map" on:contextmenu|preventDefault={handleContextMenu}>
-    <ContextMenu {map} />
+<div id="map" bind:this={mapElement} on:contextmenu|preventDefault={handleContextMenu}>
+    <ContextMenu bind:open={contextMenuOpen} pixel={contextMenuPixel} />
 
-    <OverviewSwitcher mainMap="{map}" mainBaseLayers="{map.baseLayers}" />
+    <OverviewSwitcher />
 
     <div class="controls bottom right column" on:contextmenu|stopPropagation>
-        <button title="My location" class="material-icons" on:click="{handleMyLocation}">
-            my_location
-        </button>
-        <button title="Reset map view" class="material-icons" on:click="{handleZoomToFullExtent}">
+        {#if $currentLocation.position}
+            <button title="My location" class="material-icons" on:click="{handleMyLocation}">
+                my_location
+            </button>
+        {/if}
+        <button title="Show coverage area" class="material-icons" on:click="{handleZoomToFullExtent}">
             public
         </button>
-        <button title="Zoom in" class="material-icons" on:click="{handleZoomIn}">add</button>
-        <button title="Zoom out" class="material-icons" on:click="{handleZoomOut}">remove</button>
+        <button title="Zoom in" class="material-icons hidden-xs" on:click="{handleZoomIn}">
+            add
+        </button>
+        <button title="Zoom out" class="material-icons hidden-xs" on:click="{handleZoomOut}">
+            remove
+        </button>
     </div>
 </div>

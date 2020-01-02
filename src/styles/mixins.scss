@@ -1,19 +1,19 @@
 @import "./variables.scss";
 
 @mixin hidden-xs {
-    @media (max-width: $xs-width - 1px) {
-        display: none !important;
-    }
-}
-
-@mixin hidden-sm {
     @media (max-width: $sm-width - 1px) {
         display: none !important;
     }
 }
 
-@mixin hidden-md {
+@mixin hidden-sm {
     @media (max-width: $md-width - 1px) {
+        display: none !important;
+    }
+}
+
+@mixin hidden-md {
+    @media (max-width: $lg-width - 1px) {
         display: none !important;
     }
 }

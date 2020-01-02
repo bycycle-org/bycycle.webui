@@ -1,3 +1,4 @@
+import babel from 'rollup-plugin-babel';
 import commonjsPlugin from 'rollup-plugin-commonjs';
 import dotenvPlugin from 'rollup-plugin-dotenv';
 import livereloadPlugin from 'rollup-plugin-livereload';
@@ -27,6 +28,10 @@ export default {
         format: 'iife',
         name: 'app',
         file: 'public/bundle.js'
+    },
+
+    watch: {
+        clearScreen: false
     },
 
     plugins: [
@@ -73,8 +78,31 @@ export default {
             }
         }),
 
-        resolvePlugin(),
+        resolvePlugin({
+            browser: true,
+            dedupe: importee => importee === 'svelte' || importee.startsWith('svelte/')
+        }),
+
         commonjsPlugin(),
+
+        !IS_DEV && babel({
+            include: ['src/**', 'node_modules/svelte/**'],
+            exclude: ['node_modules/@babel/**', 'node_modules/core-js/**'],
+            extensions: ['.js', '.jsx', '.es6', '.es', '.mjs', '.svelte'],
+            plugins: [
+                ['@babel/plugin-transform-runtime']
+            ],
+            presets: [
+                [
+                    '@babel/preset-env',
+                    {
+                        corejs: 3,
+                        useBuiltIns: 'usage'
+                    }
+                ]
+            ],
+            runtimeHelpers: true
+        }),
 
         LIVE_RELOAD && livereloadPlugin('public'),
 

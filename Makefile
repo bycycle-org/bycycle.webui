@@ -1,5 +1,6 @@
-init:
-	poetry install
+.PHONY = init
+init: .venv
 	./.venv/bin/runcommand init
 
-.PHONY = init
+.venv:
+	poetry install
