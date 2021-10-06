@@ -7,8 +7,18 @@ export async function fetchWrapper(path, params = {}, suppressErrors = false) {
     const url = new URL(apiUrl);
     let response;
 
+    // Remove parameters with undefined value
     if (Object.getOwnPropertyNames(params).length) {
-        url.search = new URLSearchParams(params).toString();
+        const filteredParams = {};
+        Object.getOwnPropertyNames(params).forEach(name => {
+            const value = params[name];
+            if (typeof value !== 'undefined') {
+                filteredParams[name] = value;
+            }
+        });
+        if (Object.getOwnPropertyNames(filteredParams).length) {
+            url.search = new URLSearchParams(filteredParams).toString();
+        }
     }
 
     progressCounter.increment();
