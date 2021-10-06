@@ -31,7 +31,7 @@
     }
 </script>
 
-<style type="text/scss">
+<style lang="scss">
     @import './styles/mixins';
     @import './styles/variables';
 

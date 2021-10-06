@@ -1,3 +1,5 @@
+@use "sass:math";
+
 @import "../../node_modules/ol/ol";
 @import "./mixins";
 @import "./variables";
@@ -137,4 +139,183 @@ button.material-icons {
 }
 .hidden-md {
     @include hidden-md();
+}
+
+/* App */
+.function {
+    form,
+    #results,
+    #error {
+        position: absolute;
+        right: 0;
+        left: 0;
+        min-width: math.div($sm-width, 2);
+        z-index: 2;
+
+        margin: 0;
+        padding: 0;
+
+        background-color: white;
+        box-shadow: 2px 2px 2px $link-color;
+
+        @media (min-width: $sm-width) {
+            right: auto;
+            left: $standard-spacing;
+            width: $panel-width - $twice-standard-spacing;
+        }
+    }
+
+    form {
+        button.material-icons[disabled] {
+            border: none;
+        }
+
+        input {
+            border: none;
+            outline: 0;
+            margin: 0;
+            padding: 0;
+            height: $button-width + $standard-spacing;
+            font-size: 14px;
+            min-width: 20px;
+        }
+
+        span {
+            color: gray;
+            font-size: 22px;
+            line-height: 1;
+            margin: $half-standard-spacing 0;
+        }
+
+        @media (min-width: $sm-width) {
+            top: $standard-spacing;
+
+            input {
+                font-size: 16px;
+                line-height: 22px;
+            }
+        }
+    }
+
+    #results,
+    #error {
+        overflow-y: auto;
+    }
+
+    #results, .results {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+
+        > li {
+            border-top: 1px solid #e0e0e0;
+            margin: 0;
+            padding: 0;
+
+            &:hover {
+                background-color: #f8f8f8;
+            }
+
+            a {
+                color: $text-color;
+                text-decoration: none;
+            }
+
+            > * {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                padding: $standard-spacing $half-standard-spacing;
+            }
+        }
+    }
+
+    #error {
+        color: darkred;
+        border-top: 1px solid #e0e0e0;
+        padding: $half-standard-spacing;
+
+        .error-title {
+            font-size: 20px;
+            margin-bottom: $standard-spacing;
+        }
+
+        .error-message > * {
+            margin-top: 0;
+            margin-bottom: $standard-spacing;
+            padding: 0;
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+    }
+
+    @media (min-width: $sm-width) {
+        width: $panel-width - $twice-standard-spacing;
+    }
+}
+
+/* Map */
+#map > .controls > * {
+    box-shadow: 2px 2px 2px $link-color;
+}
+
+#map > .controls {
+    position: absolute;
+    z-index: 1;
+}
+
+#map > .controls.row,
+#map > .controls.column {
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+#map > .controls.row {
+    flex-direction: row;
+}
+#map > .controls.row > * {
+    margin-right: $half-standard-spacing;
+}
+#map > .controls.row > *:last-child {
+    margin-right: 0;
+}
+
+#map > .controls.column {
+    flex-direction: column;
+}
+#map > .controls.column > * {
+    margin-bottom: $half-standard-spacing;
+}
+#map > .controls.column > *:last-child {
+    margin-bottom: 0;
+}
+
+#map > .controls.top {
+    top: $half-standard-spacing;
+}
+#map > .controls.right {
+    right: $half-standard-spacing;
+}
+#map > .controls.bottom {
+    bottom: $half-standard-spacing;
+}
+#map > .controls.left {
+    left: $half-standard-spacing;
+}
+
+@media (min-width: $sm-width) {
+    #map > .controls.top {
+        top: $standard-spacing;
+    }
+    #map > .controls.right {
+        right: $standard-spacing;
+    }
+    #map > .controls.bottom {
+        bottom: $standard-spacing;
+    }
+    #map > .controls.left {
+        left: $standard-spacing;
+    }
 }

@@ -88,9 +88,9 @@
     }
 </script>
 
-<style type="text/scss">
-    @import './styles/mixins';
-    @import './styles/variables';
+<style lang="scss">
+    @import '../styles/mixins';
+    @import '../styles/variables';
 
     #overview-switcher-map {
         background-color: white;

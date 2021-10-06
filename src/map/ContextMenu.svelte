@@ -96,8 +96,8 @@
     }
 </script>
 
-<style type="text/scss">
-    @import 'styles/variables';
+<style lang="scss">
+    @import '../styles/variables';
 
     @keyframes fade-in {
         from { opacity: 0; }

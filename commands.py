@@ -59,7 +59,7 @@ def sass(sources: arg(container=tuple), watch=False, quiet=False):
     for source in sources:
         name = os.path.basename(source)
         root, ext = os.path.splitext(name)
-        destination = os.path.join('public', f'{root}.css')
+        destination = os.path.join('public', 'build', f'{root}.css')
         args.append(f'{source}:{destination}')
         destinations.append(destination)
     local(('sass', '--watch' if watch else None, *args))
@@ -72,7 +72,7 @@ def sass(sources: arg(container=tuple), watch=False, quiet=False):
 def dev_server(default_args, host='localhost', port=5000, directory='public'):
     printer.header('Running dev server')
 
-    printer.info('Cleaning')
+    printer.hr('Cleaning', color='info')
     clean()
 
     printer.info('Running scss watcher in background')
@@ -80,21 +80,21 @@ def dev_server(default_args, host='localhost', port=5000, directory='public'):
     for source in default_args['sass']['sources']:
         name = os.path.basename(source)
         root, ext = os.path.splitext(name)
-        destination = os.path.join('public', f'{root}.css')
+        destination = os.path.join('public', 'build', f'{root}.css')
         sass_args.append(f'{source}:{destination}')
     local(sass_args, background=True, environ={
         'NODE_ENV': 'development',
     })
     wait_for_file(destination)
 
-    printer.info('Running rollup watcher in background')
+    printer.hr('Running rollup watcher in background', color='info')
     local(['rollup', '--config', '--watch'], background=True, environ={
         'NODE_ENV': 'development',
         'LIVE_RELOAD': 'true',
     })
-    wait_for_file('public/bundle.js')
+    wait_for_file('public/build/bundle.js')
 
-    printer.info(f'Serving {directory} directory at http://{host}:{port}/')
+    printer.hr(f'Serving {directory} directory at http://{host}:{port}/', color='info')
 
     class RequestHandler(SimpleHTTPRequestHandler):
 
@@ -116,15 +116,6 @@ def dev_server(default_args, host='localhost', port=5000, directory='public'):
 
 @command
 def clean(quiet=False):
-    def rmfile(file):
-        if os.path.isfile(file):
-            os.remove(file)
-            if not quiet:
-                printer(f'Removed file: {file}')
-        else:
-            if not quiet:
-                printer.warning(f'Path does not exist or is not a file: {file}')
-
     def rmdir(path):
         if os.path.isdir(path):
             shutil.rmtree(path)
@@ -135,16 +126,7 @@ def clean(quiet=False):
                 printer.warning(f'Path does not exist or is not a directory: {path}')
 
     rmdir('__pycache__')
-
-    for file in (
-        'public/bundle.css',
-        'public/bundle.css.map',
-        'public/bundle.js',
-        'public/bundle.js.map',
-        'public/global.css',
-        'public/global.css.map',
-    ):
-        rmfile(file)
+    rmdir('public/build')
 
 
 @command

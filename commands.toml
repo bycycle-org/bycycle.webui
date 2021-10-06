@@ -1,0 +1,11 @@
+[globals]
+env = "development"
+
+[envs.development]
+
+[envs.production]
+host = "bycycle.org"
+run_as = "bycycle"
+
+[args]
+sass.sources = ["src/styles/global.scss"]

@@ -37,7 +37,9 @@ export async function getDirections(state, map, myLocation) {
 
     const params = {
         from: fromTerm,
-        to: toTerm
+        to: toTerm,
+        from_point: undefined,
+        to_point: undefined,
     };
 
     if (fromPoint) {

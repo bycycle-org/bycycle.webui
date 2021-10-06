@@ -20,7 +20,7 @@
     setContext('map', new MapService());
 </script>
 
-<style type="text/scss">
+<style lang="scss">
     @import './styles/variables';
 
     #container {
@@ -82,18 +82,24 @@
         bottom: $half-standard-spacing;
         left: $half-standard-spacing;
 
-        width: $header-width;
         z-index: 1;
+
+        background-color: rgba(255, 255, 255, 0.75);
+        border-radius: 2px;
+        box-shadow: 2px 2px 2px $link-color;
+        padding: 4px;
 
         > h1 {
             margin: 0;
             padding: 0;
+            line-height: 1;
 
             > a {
                 color: $header-color;
                 display: block;
                 font-size: 18px;
                 font-weight: normal;
+                line-height: 1;
                 text-decoration: none;
                 text-shadow: 1px 1px 2px;
             }
@@ -116,119 +122,6 @@
 
         @media (min-width: $lg-width) {
             left: (2 * $standard-spacing) + $overview-switcher-width-lg;
-        }
-    }
-
-    :global(.function) {
-        form,
-        #results,
-        #error {
-            position: absolute;
-            right: 0;
-            left: 0;
-            min-width: $sm-width / 2;
-            z-index: 2;
-
-            margin: 0;
-            padding: 0;
-
-            background-color: white;
-            box-shadow: 2px 2px 2px $link-color;
-
-            @media (min-width: $sm-width) {
-                right: auto;
-                left: $standard-spacing;
-                width: $panel-width - $twice-standard-spacing;
-            }
-        }
-
-        form {
-            button.material-icons[disabled] {
-                border: none;
-            }
-
-            input {
-                border: none;
-                outline: 0;
-                margin: 0;
-                padding: 0;
-                height: $button-width + $standard-spacing;
-                font-size: 14px;
-                min-width: 20px;
-            }
-
-            span {
-                color: gray;
-                font-size: 22px;
-                line-height: 1;
-                margin: $half-standard-spacing 0;
-            }
-
-            @media (min-width: $sm-width) {
-                top: $standard-spacing;
-
-                input {
-                    font-size: 16px;
-                    line-height: 22px;
-                }
-            }
-        }
-
-        #results,
-        #error {
-            overflow-y: auto;
-        }
-
-        #results, .results {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-
-            > li {
-                border-top: 1px solid #e0e0e0;
-                margin: 0;
-                padding: 0;
-
-                &:hover {
-                    background-color: #f8f8f8;
-                }
-
-                a {
-                    color: $text-color;
-                    text-decoration: none;
-                }
-
-                > * {
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    padding: $standard-spacing $half-standard-spacing;
-                }
-            }
-        }
-
-        #error {
-            color: darkred;
-            border-top: 1px solid #e0e0e0;
-            padding: $half-standard-spacing;
-
-            .error-title {
-                font-size: 20px;
-                margin-bottom: $standard-spacing;
-            }
-
-            .error-message > * {
-                margin-top: 0;
-                margin-bottom: $standard-spacing;
-                padding: 0;
-                &:last-child {
-                    margin-bottom: 0;
-                }
-            }
-        }
-
-        @media (min-width: $sm-width) {
-            width: $panel-width - $twice-standard-spacing;
         }
     }
 </style>

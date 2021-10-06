@@ -1,0 +1,618 @@
+.ol-box {
+  box-sizing: border-box;
+  border-radius: 2px;
+  border: 1.5px solid rgb(179, 197, 219);
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.ol-mouse-position {
+  top: 8px;
+  right: 8px;
+  position: absolute;
+}
+
+.ol-scale-line {
+  background: rgba(0, 60, 136, 0.3);
+  border-radius: 4px;
+  bottom: 8px;
+  left: 8px;
+  padding: 2px;
+  position: absolute;
+}
+
+.ol-scale-line-inner {
+  border: 1px solid #eee;
+  border-top: none;
+  color: #eee;
+  font-size: 10px;
+  text-align: center;
+  margin: 1px;
+  will-change: contents, width;
+  transition: all 0.25s;
+}
+
+.ol-scale-bar {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+}
+
+.ol-scale-step-marker {
+  width: 1px;
+  height: 15px;
+  background-color: #000000;
+  float: right;
+  z-Index: 10;
+}
+
+.ol-scale-step-text {
+  position: absolute;
+  bottom: -5px;
+  font-size: 12px;
+  z-Index: 11;
+  color: #000000;
+  text-shadow: -2px 0 #FFFFFF, 0 2px #FFFFFF, 2px 0 #FFFFFF, 0 -2px #FFFFFF;
+}
+
+.ol-scale-text {
+  position: absolute;
+  font-size: 14px;
+  text-align: center;
+  bottom: 25px;
+  color: #000000;
+  text-shadow: -2px 0 #FFFFFF, 0 2px #FFFFFF, 2px 0 #FFFFFF, 0 -2px #FFFFFF;
+}
+
+.ol-scale-singlebar {
+  position: relative;
+  height: 10px;
+  z-Index: 9;
+  box-sizing: border-box;
+  border: 1px solid black;
+}
+
+.ol-unsupported {
+  display: none;
+}
+
+.ol-viewport, .ol-unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+.ol-selectable {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+.ol-grabbing {
+  cursor: -webkit-grabbing;
+  cursor: -moz-grabbing;
+  cursor: grabbing;
+}
+
+.ol-grab {
+  cursor: move;
+  cursor: -webkit-grab;
+  cursor: -moz-grab;
+  cursor: grab;
+}
+
+.ol-control {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.ol-control:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.ol-zoom {
+  top: 0.5em;
+  left: 0.5em;
+}
+
+.ol-rotate {
+  top: 0.5em;
+  right: 0.5em;
+  transition: opacity 0.25s linear, visibility 0s linear;
+}
+
+.ol-rotate.ol-hidden {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s linear, visibility 0s linear 0.25s;
+}
+
+.ol-zoom-extent {
+  top: 4.643em;
+  left: 0.5em;
+}
+
+.ol-full-screen {
+  right: 0.5em;
+  top: 0.5em;
+}
+
+.ol-control button {
+  display: block;
+  margin: 1px;
+  padding: 0;
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+  font-size: inherit;
+  text-align: center;
+  height: 1.375em;
+  width: 1.375em;
+  line-height: 0.4em;
+  background-color: rgba(0, 60, 136, 0.5);
+  border: none;
+  border-radius: 2px;
+}
+
+.ol-control button::-moz-focus-inner {
+  border: none;
+  padding: 0;
+}
+
+.ol-zoom-extent button {
+  line-height: 1.4em;
+}
+
+.ol-compass {
+  display: block;
+  font-weight: normal;
+  font-size: 1.2em;
+  will-change: transform;
+}
+
+.ol-touch .ol-control button {
+  font-size: 1.5em;
+}
+
+.ol-touch .ol-zoom-extent {
+  top: 5.5em;
+}
+
+.ol-control button:hover,
+.ol-control button:focus {
+  text-decoration: none;
+  background-color: rgba(0, 60, 136, 0.7);
+}
+
+.ol-zoom .ol-zoom-in {
+  border-radius: 2px 2px 0 0;
+}
+
+.ol-zoom .ol-zoom-out {
+  border-radius: 0 0 2px 2px;
+}
+
+.ol-attribution {
+  text-align: right;
+  bottom: 0.5em;
+  right: 0.5em;
+  max-width: calc(100% - 1.3em);
+  display: flex;
+  flex-flow: row-reverse;
+  align-items: center;
+}
+
+.ol-attribution a {
+  color: rgba(0, 60, 136, 0.7);
+  text-decoration: none;
+}
+
+.ol-attribution ul {
+  margin: 0;
+  padding: 1px 0.5em;
+  color: #000;
+  text-shadow: 0 0 2px #fff;
+  font-size: 12px;
+}
+
+.ol-attribution li {
+  display: inline;
+  list-style: none;
+}
+
+.ol-attribution li:not(:last-child):after {
+  content: " ";
+}
+
+.ol-attribution img {
+  max-height: 2em;
+  max-width: inherit;
+  vertical-align: middle;
+}
+
+.ol-attribution button {
+  flex-shrink: 0;
+}
+
+.ol-attribution.ol-collapsed ul {
+  display: none;
+}
+
+.ol-attribution:not(.ol-collapsed) {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.ol-attribution.ol-uncollapsible {
+  bottom: 0;
+  right: 0;
+  border-radius: 4px 0 0;
+}
+
+.ol-attribution.ol-uncollapsible img {
+  margin-top: -0.2em;
+  max-height: 1.6em;
+}
+
+.ol-attribution.ol-uncollapsible button {
+  display: none;
+}
+
+.ol-zoomslider {
+  top: 4.5em;
+  left: 0.5em;
+  height: 200px;
+}
+
+.ol-zoomslider button {
+  position: relative;
+  height: 10px;
+}
+
+.ol-touch .ol-zoomslider {
+  top: 5.5em;
+}
+
+.ol-overviewmap {
+  left: 0.5em;
+  bottom: 0.5em;
+}
+
+.ol-overviewmap.ol-uncollapsible {
+  bottom: 0;
+  left: 0;
+  border-radius: 0 4px 0 0;
+}
+
+.ol-overviewmap .ol-overviewmap-map,
+.ol-overviewmap button {
+  display: block;
+}
+
+.ol-overviewmap .ol-overviewmap-map {
+  border: 1px solid #7b98bc;
+  height: 150px;
+  margin: 2px;
+  width: 150px;
+}
+
+.ol-overviewmap:not(.ol-collapsed) button {
+  bottom: 2px;
+  left: 2px;
+  position: absolute;
+}
+
+.ol-overviewmap.ol-collapsed .ol-overviewmap-map,
+.ol-overviewmap.ol-uncollapsible button {
+  display: none;
+}
+
+.ol-overviewmap:not(.ol-collapsed) {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.ol-overviewmap-box {
+  border: 2px dotted rgba(0, 60, 136, 0.7);
+}
+
+.ol-overviewmap .ol-overviewmap-box:hover {
+  cursor: move;
+}
+
+html {
+  box-sizing: border-box;
+  background-color: #b8e2fc;
+  color: #303030;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  position: relative;
+}
+
+a {
+  color: steelblue;
+}
+
+a:hover {
+  color: orange;
+}
+
+@keyframes blinker {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+button.material-icons {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+  color: steelblue;
+  border: 1px solid #bdd3e5;
+  border-radius: 2px;
+}
+button.material-icons:hover {
+  border: 1px solid #a0bfda;
+  box-shadow: 0 0 1px;
+  cursor: pointer;
+}
+button.material-icons:disabled {
+  color: gray;
+}
+button.material-icons:disabled:hover {
+  border: none;
+  box-shadow: none;
+  cursor: auto;
+}
+
+.material-icons.map-marker {
+  color: #ff4136;
+  font-size: 36px;
+  text-shadow: 2px -1px 2px #303030;
+}
+.material-icons.map-marker.map-marker-place {
+  color: red;
+}
+.material-icons.map-marker.map-marker-place::before {
+  content: "place";
+}
+.material-icons.map-marker.map-marker-start, .material-icons.map-marker.map-marker-end {
+  border: 2px solid white;
+  box-shadow: 2px 2px 2px #404040;
+  width: 24px;
+  height: 24px;
+}
+.material-icons.map-marker.map-marker-start {
+  background-color: green;
+  border-radius: 50%;
+}
+.material-icons.map-marker.map-marker-end {
+  background-color: red;
+}
+.material-icons.map-marker.map-marker-turn {
+  color: orange;
+}
+.material-icons.map-marker.map-marker-turn::before {
+  content: "directions_bike";
+}
+
+.flex-spacer {
+  flex: 1;
+}
+
+@media (max-width: 575px) {
+  .hidden-xs {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .hidden-sm {
+    display: none !important;
+  }
+}
+
+@media (max-width: 991px) {
+  .hidden-md {
+    display: none !important;
+  }
+}
+
+.function form,
+.function #results,
+.function #error {
+  position: absolute;
+  right: 0;
+  left: 0;
+  min-width: 288px;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+  box-shadow: 2px 2px 2px steelblue;
+}
+@media (min-width: 576px) {
+  .function form,
+.function #results,
+.function #error {
+    right: auto;
+    left: 8px;
+    width: 384px;
+  }
+}
+.function form button.material-icons[disabled] {
+  border: none;
+}
+.function form input {
+  border: none;
+  outline: 0;
+  margin: 0;
+  padding: 0;
+  height: 40px;
+  font-size: 14px;
+  min-width: 20px;
+}
+.function form span {
+  color: gray;
+  font-size: 22px;
+  line-height: 1;
+  margin: 4px 0;
+}
+@media (min-width: 576px) {
+  .function form {
+    top: 8px;
+  }
+  .function form input {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+.function #results,
+.function #error {
+  overflow-y: auto;
+}
+.function #results, .function .results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.function #results > li, .function .results > li {
+  border-top: 1px solid #e0e0e0;
+  margin: 0;
+  padding: 0;
+}
+.function #results > li:hover, .function .results > li:hover {
+  background-color: #f8f8f8;
+}
+.function #results > li a, .function .results > li a {
+  color: #303030;
+  text-decoration: none;
+}
+.function #results > li > *, .function .results > li > * {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 4px;
+}
+.function #error {
+  color: darkred;
+  border-top: 1px solid #e0e0e0;
+  padding: 4px;
+}
+.function #error .error-title {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.function #error .error-message > * {
+  margin-top: 0;
+  margin-bottom: 8px;
+  padding: 0;
+}
+.function #error .error-message > *:last-child {
+  margin-bottom: 0;
+}
+@media (min-width: 576px) {
+  .function {
+    width: 384px;
+  }
+}
+
+/* Map */
+#map > .controls.row {
+  flex-direction: row;
+}
+
+#map > .controls.row > * {
+  margin-right: 4px;
+}
+
+#map > .controls.row > *:last-child {
+  margin-right: 0;
+}
+
+#map > .controls.column {
+  flex-direction: column;
+}
+
+#map > .controls.column > * {
+  margin-bottom: 4px;
+}
+
+#map > .controls.column > *:last-child {
+  margin-bottom: 0;
+}
+
+#map > .controls.top {
+  top: 4px;
+}
+
+#map > .controls.right {
+  right: 4px;
+}
+
+#map > .controls.bottom {
+  bottom: 4px;
+}
+
+#map > .controls.left {
+  left: 4px;
+}
+
+@media (min-width: 576px) {
+  #map > .controls.top {
+    top: 8px;
+  }
+
+  #map > .controls.right {
+    right: 8px;
+  }
+
+  #map > .controls.bottom {
+    bottom: 8px;
+  }
+
+  #map > .controls.left {
+    left: 8px;
+  }
+}
+
+/*# sourceMappingURL=global.css.map */

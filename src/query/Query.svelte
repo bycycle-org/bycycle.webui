@@ -157,8 +157,8 @@
     }
 </script>
 
-<style type="text/scss">
-    @import './styles/variables';
+<style lang="scss">
+    @import '../styles/variables';
 
     form {
         display: flex;
@@ -239,4 +239,3 @@
         </div>
     {/if}
 </div>
-

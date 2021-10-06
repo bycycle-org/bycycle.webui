@@ -8,13 +8,13 @@ export async function fetchWrapper(path, params = {}, suppressErrors = false) {
     let response;
 
     if (Object.getOwnPropertyNames(params).length) {
-        url.search = new URLSearchParams(params);
+        url.search = new URLSearchParams(params).toString();
     }
 
     progressCounter.increment();
 
     try {
-        response = await fetch(url, { signal: abortController.signal });
+        response = await fetch(url.toString(), { signal: abortController.signal });
     } catch (error) {
         if (error.name === 'AbortError') {
             return null;

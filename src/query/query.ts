@@ -23,7 +23,7 @@ export async function submitQuery(state, map, myLocation, suppressErrors = false
         }
     }
 
-    const params = { term };
+    const params = { term, point: undefined };
 
     if (point) {
         if (typeof point !== 'string') {

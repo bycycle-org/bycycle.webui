@@ -38,6 +38,16 @@ import {
 import { BOUNDARY_STYLE, MY_LOCATION_ACCURACY_STYLE, MY_LOCATION_STYLE } from './styles';
 
 export default class MapService {
+    private map: any;
+    private view: any;
+    private baseLayer: any;
+    private baseLayers: any;
+    private myLocationLayer: any;
+    private boundaryLayer: any;
+    private vectorLayer: any;
+    private overlays: any[];
+
+
     constructor() {
         const baseLayers = [];
         if (DEBUG) {
@@ -69,8 +79,8 @@ export default class MapService {
             });
             baseLayers.push(
                 new LayerGroup({
-                    label: 'Debug',
-                    shortLabel: 'Debug',
+                    // label: 'Debug',
+                    // shortLabel: 'Debug',
                     layers: [
                         this.makeMVTLayer('street', 'Streets', null, true, STREET_STYLE),
                         this.makeMVTLayer(
@@ -190,13 +200,18 @@ export default class MapService {
             `access_token=${MAPBOX_ACCESS_TOKEN}`
         ].join('?');
         const source = new XYZSource({ url });
-        shortLabel = shortLabel || label;
-        return new TileLayer({ label, shortLabel, source, visible });
+        const layer = new TileLayer({ source, visible });
+        layer.set('label', label);
+        layer.set('shortLabel', shortLabel || label);
+        return layer;
     }
 
     makeOSMLayer(label = 'OpenStreetMap', shortLabel = 'OSM', visible = false) {
-        let source = new OSMSource();
-        return new TileLayer({ label, shortLabel, source, visible });
+        const source = new OSMSource();
+        const layer = new TileLayer({ source, visible });
+        layer.set('label', label);
+        layer.set('shortLabel', shortLabel || label);
+        return layer;
     }
 
     makeMVTLayer(layerName, label, shortLabel = null, visible = false, style = undefined) {
@@ -205,7 +220,10 @@ export default class MapService {
             format: new MVTFormat(),
             url: makeApiUrl(`map/tiles/${layerName}/{x}/{y}/{z}`)
         });
-        return new VectorTileLayer({ label, shortLabel, source, visible, style });
+        const layer = new VectorTileLayer({ source, visible, style });
+        layer.set('label', label);
+        layer.set('shortLabel', shortLabel || label);
+        return layer;
     }
 
     makeBoundaryLayer() {
@@ -229,7 +247,7 @@ export default class MapService {
         return this.view.getCenter();
     }
 
-    setCenter(center, zoom, options = {}) {
+    setCenter(center, zoom?, options: any = {}) {
         options.center = center;
         if (typeof zoom !== 'undefined') {
             options.zoom = zoom;
@@ -237,7 +255,7 @@ export default class MapService {
         if (typeof options.duration === 'undefined') {
             options.duration = ANIMATION_DURATION;
         }
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.view.animate(options, completed => {
                 completed ? resolve() : reject();
             });
@@ -262,11 +280,11 @@ export default class MapService {
         return this.view.calculateExtent();
     }
 
-    fitExtent(extent, options = {}) {
+    fitExtent(extent, options: any = {}) {
         if (typeof options.duration === 'undefined') {
             options.duration = ANIMATION_DURATION;
         }
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             options.callback = completed => {
                 completed ? resolve() : reject();
             };
@@ -291,12 +309,12 @@ export default class MapService {
         return this.view.getZoom();
     }
 
-    setZoom(zoom, options = {}) {
+    setZoom(zoom, options: any = {}) {
         options.zoom = zoom;
         if (typeof options.duration === 'undefined') {
             options.duration = ANIMATION_DURATION;
         }
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.view.animate(options, completed => {
                 completed ? resolve() : reject();
             });

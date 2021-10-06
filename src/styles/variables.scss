@@ -1,3 +1,5 @@
+@use "sass:math";
+
 $sm-width: 576px;
 $md-width: 768px;
 $lg-width: 992px;
@@ -13,7 +15,7 @@ $link-color: steelblue;
 $link-hover-color: orange;
 
 $standard-spacing: 8px;
-$half-standard-spacing: $standard-spacing / 2;
+$half-standard-spacing: math.div($standard-spacing, 2);
 $twice-standard-spacing: $standard-spacing * 2;
 
 $border-radius: 2px;

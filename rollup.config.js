@@ -1,15 +1,12 @@
-import babel from 'rollup-plugin-babel';
-import commonjsPlugin from 'rollup-plugin-commonjs';
+import commonjsPlugin from '@rollup/plugin-commonjs';
+import cssPlugin from 'rollup-plugin-css-only';
 import dotenvPlugin from 'rollup-plugin-dotenv';
 import livereloadPlugin from 'rollup-plugin-livereload';
-import resolvePlugin from 'rollup-plugin-node-resolve';
+import resolvePlugin from '@rollup/plugin-node-resolve';
 import sveltePlugin from 'rollup-plugin-svelte';
+import sveltePreprocess from 'svelte-preprocess';
+import typescriptPlugin from '@rollup/plugin-typescript';
 import { terser as terserPlugin } from 'rollup-plugin-terser';
-
-import { render as renderSass } from 'sass';
-
-import autoprefixer from 'autoprefixer';
-import postcss from 'postcss';
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -21,13 +18,13 @@ const LIVE_RELOAD = !process.env.LIVE_RELOAD
     : ['true', '1'].includes(process.env.LIVE_RELOAD);
 
 export default {
-    input: 'src/main.js',
+    input: 'src/main.ts',
 
     output: {
         sourcemap: true,
         format: 'iife',
         name: 'app',
-        file: 'public/bundle.js'
+        file: 'public/build/bundle.js'
     },
 
     watch: {
@@ -38,70 +35,27 @@ export default {
         dotenvPlugin(),
 
         sveltePlugin({
-            dev: IS_DEV,
+            preprocess: sveltePreprocess({
+                sourceMap: IS_DEV
+            }),
 
-            preprocess: {
-                style: ({ content, attributes }) => {
-                    if (attributes.type !== 'text/scss') {
-                        return;
-                    }
-
-                    return new Promise((fulfill, reject) => {
-                        renderSass(
-                            {
-                                data: content,
-                                includePaths: ['node_modules', 'src'],
-                                sourceMap: true,
-                                outFile: 'unused'
-                            },
-                            (error, result) => {
-                                if (error) {
-                                    return reject(error);
-                                }
-
-                                postcss(autoprefixer)
-                                    .process(result.css.toString(), { from: undefined })
-                                    .then(postcssResult => {
-                                        fulfill({
-                                            code: postcssResult.css,
-                                            map: result.map.toString()
-                                        });
-                                    });
-                            }
-                        );
-                    });
-                }
-            },
-
-            css: css => {
-                css.write('public/bundle.css');
+            compilerOptions: {
+                dev: IS_DEV
             }
         }),
 
+        cssPlugin({ output: 'bundle.css' }),
+
         resolvePlugin({
             browser: true,
-            dedupe: importee => importee === 'svelte' || importee.startsWith('svelte/')
+            dedupe: ['svelte']
         }),
 
         commonjsPlugin(),
 
-        !IS_DEV && babel({
-            include: ['src/**', 'node_modules/svelte/**'],
-            exclude: ['node_modules/@babel/**', 'node_modules/core-js/**'],
-            extensions: ['.js', '.jsx', '.es6', '.es', '.mjs', '.svelte'],
-            plugins: [
-                ['@babel/plugin-transform-runtime']
-            ],
-            presets: [
-                [
-                    '@babel/preset-env',
-                    {
-                        corejs: 3,
-                        useBuiltIns: 'usage'
-                    }
-                ]
-            ],
-            runtimeHelpers: true
+        typescriptPlugin({
+            sourceMap: IS_DEV,
+            inlineSources: IS_DEV
         }),
 
         LIVE_RELOAD && livereloadPlugin('public'),

@@ -115,8 +115,8 @@
     }
 </script>
 
-<style type="text/scss">
-    @import 'styles/variables';
+<style lang="scss">
+    @import '../styles/variables';
 
     #map {
         position: absolute;
@@ -124,70 +124,6 @@
         right: 0;
         bottom: 0;
         left: 0;
-    }
-
-    #map > .controls > * {
-        box-shadow: 2px 2px 2px $link-color;
-    }
-
-    #map > :global(.controls) {
-        position: absolute;
-        z-index: 1;
-    }
-
-    #map > :global(.controls.row),
-    #map > :global(.controls.column) {
-        display: flex;
-        margin: 0;
-        padding: 0;
-    }
-
-    #map > :global(.controls.row) {
-        flex-direction: row;
-    }
-    #map > :global(.controls.row > *) {
-        margin-right: $half-standard-spacing;
-    }
-    #map > :global(.controls.row > *:last-child) {
-        margin-right: 0;
-    }
-
-    #map > :global(.controls.column) {
-        flex-direction: column;
-    }
-    #map > :global(.controls.column > *) {
-        margin-bottom: $half-standard-spacing;
-    }
-    #map > :global(.controls.column > *:last-child) {
-        margin-bottom: 0;
-    }
-
-    #map > :global(.controls.top) {
-        top: $half-standard-spacing;
-    }
-    #map > :global(.controls.right) {
-        right: $half-standard-spacing;
-    }
-    #map > :global(.controls.bottom) {
-        bottom: $half-standard-spacing;
-    }
-    #map > :global(.controls.left) {
-        left: $half-standard-spacing;
-    }
-
-    @media (min-width: $sm-width) {
-        #map > :global(.controls.top) {
-            top: $standard-spacing;
-        }
-        #map > :global(.controls.right) {
-            right: $standard-spacing;
-        }
-        #map > :global(.controls.bottom) {
-            bottom: $standard-spacing;
-        }
-        #map > :global(.controls.left) {
-            left: $standard-spacing;
-        }
     }
 </style>
 
