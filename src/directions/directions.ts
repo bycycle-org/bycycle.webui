@@ -61,7 +61,7 @@ export async function getDirections(state, map, myLocation) {
     if (data === null) {
         // Request aborted
         return null;
-    } else if (data.error && !data.results) {
+    } else if (data.error) {
         return { fromTerm, fromPoint, toTerm, toPoint, error: data.error };
     }
 
