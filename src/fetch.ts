@@ -29,11 +29,13 @@ export async function fetchWrapper(path, params = {}, suppressErrors = false) {
         if (error.name === 'AbortError') {
             return null;
         }
+        // Unexpected/unhandled error (e.g., can't connect to API)
         return {
             error: {
+                code: response.status,
                 title: 'Error',
                 explanation: 'Unable to search at this time',
-                detail: process.env.DEBUG ? error.message : null
+                detail: process.env.DEBUG ? error.message : undefined
             }
         };
     } finally {
@@ -42,22 +44,31 @@ export async function fetchWrapper(path, params = {}, suppressErrors = false) {
 
     if ((response.status >= 400 && !suppressErrors) || response.status >= 500) {
         const defaultError = {
+            code: response.status,
             title: response.statusText,
-            explanation: 'Something unexpected happened'
+            explanation: 'Something unexpected happened',
+            detail: undefined
         };
         try {
             const data = await response.json();
-            return { error: data.error || defaultError };
+            const error = {...defaultError, ...data.error};
+            return { error };
         } catch (error) {
             return { error: defaultError };
         }
     }
 
     try {
-        return await response.json();
+        const data = await response.json();
+        // XXX: Special case for 30X errors
+        if (data.error) {
+            data.error.code = response.status;
+        }
+        return data;
     } catch (error) {
         return {
             error: {
+                code: response.status,
                 title: 'Bad data received',
                 explanation: 'Fetched data is not valid JSON',
                 detail: error.toString()
