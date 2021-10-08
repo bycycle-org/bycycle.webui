@@ -20,6 +20,18 @@ const LIVE_RELOAD = !process.env.LIVE_RELOAD
 export default {
     input: 'src/main.ts',
 
+    onwarn: function(warning, warn) {
+        const { code, loc } = warning;
+
+        // Squelch "`this` has been rewritten to `undefined`" warning
+        // originating in OpenLayers.
+        if (code === 'THIS_IS_UNDEFINED' && loc.file.match(/node_modules[/]ol[/].+?[.]js$/)) {
+            return;
+        }
+
+        return warn(warning);
+    },
+
     output: {
         sourcemap: true,
         format: 'iife',
