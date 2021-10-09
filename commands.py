@@ -135,7 +135,7 @@ def deploy(env, host, version=None, build_=True, clean_=True, verbose=False, pus
     if env == 'development':
         abort(1, 'Can\'t deploy to development environment')
     version = version or git_version()
-    root_dir = '/sites/bycycle.org/webui'
+    root_dir = f'/sites/{host}/webui'
     build_dir = f'{root_dir}/builds/{version}'
     link_path = f'{root_dir}/current'
     real_run = not dry_run
@@ -163,8 +163,9 @@ def deploy(env, host, version=None, build_=True, clean_=True, verbose=False, pus
         build(env, clean_=clean_, verbose=verbose)
 
     if push:
+        remote(f'test -d {build_dir} || mkdir -p {build_dir}')
         printer.info(f'Pushing public/ to {build_dir}...')
-        sync('public/', build_dir, host, delete=overwrite, dry_run=dry_run, echo=verbose)
+        sync('public/', f'{build_dir}/', host, delete=overwrite, dry_run=dry_run, echo=verbose)
 
     if chown:
         owner = 'bycycle:www-data'
