@@ -1,16 +1,19 @@
-[build-system]
-requires = ["poetry>=1.0.0"]
-build-backend = "poetry.masonry.api"
-
-[tool.poetry]
+[project]
 name = "bycycle.webui"
-version = "1.0a1"
-description = "byCycle Web UI"
-authors = ["Wyatt Baldwin <wyatt@bycycle.org>"]
+version = "1.0a1.dev0"
+description = "byCycle web API"
+authors = [{ name = "Wyatt Baldwin", email = "code@wyattbaldwin.com" }]
+license = "GPL-3.0-or-later"
 
-[tool.poetry.dependencies]
-python = ">=3.8,<3.9"
-runcommands = "^1.0a68"
+requires-python = ">=3.14"
 
-[tool.poetry.dev-dependencies]
-runcommands = "^1.0a47"
+dependencies = [
+    "runcommands>=1.0a74.dev0",
+]
+
+[tool.uv.sources]
+"runcommands" = { path = "../../runcommands", editable = true }
+
+[project.urls]
+homepage = "https://bycycle.org/"
+repository = "https://github.com/bycycle-org/bycycle.webui"

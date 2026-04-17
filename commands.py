@@ -16,9 +16,10 @@ def init():
 @command
 def install(upgrade=False, skip_python=False):
     if not skip_python:
-        local('.venv/bin/pip install --upgrade --upgrade-strategy eager pip setuptools')
         if upgrade:
-            local('poetry update')
+            local('uv sync --upgrade')
+        else:
+            local('uv sync')
     if upgrade:
         local('npm out', raise_on_error=False)
         local('npm upgrade')
@@ -33,11 +34,11 @@ def build(env, clean_=True, verbose=False):
     end = None if verbose else ' '
     clean_ and do_done(f'Cleaning...', clean, quiet=quiet, _end=end)
     do_done(f'Compiling SCSS to CSS...', sass, quiet=quiet, _end=end)
-    do_done(f'Rolling up...', rollup, env, live_reload=False, quiet=quiet, _end=end)
+    do_done(f'Rolling up...', rolldown, env, live_reload=False, quiet=quiet, _end=end)
 
 
 @command
-def rollup(env, live_reload: arg(type=bool) = None, watch=False, quiet=False):
+def rolldown(env, live_reload: arg(type=bool) = None, watch=False, quiet=False):
     environ = {'NODE_ENV': env}
     if live_reload is not None:
         environ['LIVE_RELOAD'] = str(int(live_reload))
@@ -47,7 +48,7 @@ def rollup(env, live_reload: arg(type=bool) = None, watch=False, quiet=False):
         'stderr': 'capture',
         'raise_on_error': False,
     }
-    result = local(('rollup', '--config', '--watch' if watch else None), **kwargs)
+    result = local(('rolldown', '--config', '--watch' if watch else None), **kwargs)
     if result.failed:
         abort(result.return_code, result.stderr)
 
@@ -87,8 +88,8 @@ def dev_server(default_args, host='localhost', port=5000, directory='public'):
     })
     wait_for_file(destination)
 
-    printer.hr('Running rollup watcher in background', color='info')
-    local(['rollup', '--config', '--watch'], background=True, environ={
+    printer.hr('Running rolldown watcher in background', color='info')
+    local(['rolldown', '--config', '--watch'], background=True, environ={
         'NODE_ENV': 'development',
         'LIVE_RELOAD': 'true',
     })
